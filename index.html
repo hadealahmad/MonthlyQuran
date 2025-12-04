@@ -338,6 +338,10 @@
     </div>
     
     <!-- Scripts -->
+    <script src="js/constants.js"></script>
+    <script src="js/utils/logger.js"></script>
+    <script src="js/utils/svg.js"></script>
+    <script src="js/utils/debounce.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/algorithm.js"></script>
     <script src="js/i18n.js"></script>
@@ -359,7 +363,13 @@
                             console.log('SW registered');
                         }
                     })
-                    .catch(err => console.error('SW registration failed:', err));
+                    .catch(err => {
+                        if (typeof Logger !== 'undefined') {
+                            Logger.error('SW registration failed:', err);
+                        } else {
+                            console.error('SW registration failed:', err);
+                        }
+                    });
             });
         }
     </script>

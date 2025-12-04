@@ -22,7 +22,9 @@ const Components = {
     card.className = `card ${className}`;
     
     if (typeof content === 'string') {
-      card.innerHTML = content;
+      // Use textContent for plain text, create element for HTML
+      // Note: If HTML is truly needed, consider using DOMParser
+      card.textContent = content;
     } else if (content instanceof HTMLElement) {
       card.appendChild(content);
     } else if (Array.isArray(content)) {
@@ -140,9 +142,9 @@ const Components = {
     checkbox.tabIndex = 0;
     const ariaLabel = isCompleted ? i18n.t('aria.markIncomplete') : i18n.t('aria.markComplete');
     checkbox.setAttribute('aria-label', ariaLabel);
-    checkbox.innerHTML = isCompleted 
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>';
+    // Use SVG utils instead of innerHTML
+    const svgIcon = isCompleted ? SVGUtils.createCheckboxChecked() : SVGUtils.createCheckboxUnchecked();
+    checkbox.appendChild(svgIcon);
     
     // Use arrow function to preserve context
     checkbox.addEventListener('click', (e) => {
@@ -151,7 +153,7 @@ const Components = {
       
       // Ensure Storage is available and has the method
       if (!Storage || typeof Storage.isReviewCompleted !== 'function') {
-        console.error('Storage not available or missing method');
+        Logger.error('Storage not available or missing method');
         return;
       }
       
@@ -196,7 +198,8 @@ const Components = {
     const text = document.createElement('div');
     text.className = 'quick-stats-text';
     const statsText = i18n.t('today.stats', { total, completed });
-    text.innerHTML = statsText.replace(/\{\{total\}\}/g, total).replace(/\{\{completed\}\}/g, completed);
+    // Use textContent instead of innerHTML for safety
+    text.textContent = statsText.replace(/\{\{total\}\}/g, total).replace(/\{\{completed\}\}/g, completed);
     
     content.appendChild(text);
     stats.appendChild(content);

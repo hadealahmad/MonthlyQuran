@@ -5,6 +5,11 @@ const App = {
 
   // Initialize the application
   init() {
+    // Initialize DOM cache first
+    if (typeof UI !== 'undefined' && UI.initDOMCache) {
+      UI.initDOMCache();
+    }
+    
     // Initialize storage, theme, and i18n
     const config = Storage.getConfig();
     

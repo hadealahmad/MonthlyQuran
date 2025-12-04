@@ -51,27 +51,35 @@ const Calendar = {
     // In RTL: left button (visually right) goes to next month, right button (visually left) goes to prev month
     // In LTR: left button goes to prev month, right button goes to next month
     if (isRTL) {
-      newPrevMonth.addEventListener('click', () => {
+      // Debounce navigation to prevent rapid clicks
+      const debouncedNextMonth = debounce(() => {
         if (window.Calendar) {
           Calendar.nextMonth();
         }
-      });
-      newNextMonth.addEventListener('click', () => {
+      }, 150);
+      const debouncedPrevMonth = debounce(() => {
         if (window.Calendar) {
           Calendar.prevMonth();
         }
-      });
+      }, 150);
+      
+      newPrevMonth.addEventListener('click', debouncedNextMonth);
+      newNextMonth.addEventListener('click', debouncedPrevMonth);
     } else {
-      newPrevMonth.addEventListener('click', () => {
+      // Debounce navigation to prevent rapid clicks
+      const debouncedPrevMonth = debounce(() => {
         if (window.Calendar) {
           Calendar.prevMonth();
         }
-      });
-      newNextMonth.addEventListener('click', () => {
+      }, 150);
+      const debouncedNextMonth = debounce(() => {
         if (window.Calendar) {
           Calendar.nextMonth();
         }
-      });
+      }, 150);
+      
+      newPrevMonth.addEventListener('click', debouncedPrevMonth);
+      newNextMonth.addEventListener('click', debouncedNextMonth);
     }
   },
 
@@ -126,11 +134,12 @@ const Calendar = {
     // Render calendar grid
     const grid = document.getElementById('calendar-grid');
     if (!grid) {
-      console.error('Calendar grid element not found');
+      Logger.error('Calendar grid element not found');
       return;
     }
 
-    grid.innerHTML = '';
+    // Use DocumentFragment for batch DOM updates
+    const fragment = document.createDocumentFragment();
 
     // Day headers
     const weekdays = [
@@ -142,14 +151,14 @@ const Calendar = {
       const header = document.createElement('div');
       header.className = 'calendar-day-header';
       header.textContent = day;
-      grid.appendChild(header);
+      fragment.appendChild(header);
     });
 
     // Empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
       const empty = document.createElement('div');
       empty.className = 'calendar-day empty';
-      grid.appendChild(empty);
+      fragment.appendChild(empty);
     }
 
     // Days of the month
@@ -222,8 +231,12 @@ const Calendar = {
         this.selectDate(date);
       });
 
-      grid.appendChild(dayEl);
+      fragment.appendChild(dayEl);
     }
+    
+    // Batch update DOM
+    grid.innerHTML = '';
+    grid.appendChild(fragment);
   },
 
   // Get task counts for a specific month (by type)
@@ -289,7 +302,7 @@ const Calendar = {
   updateProgressionFilter() {
     const filterSelect = document.getElementById('calendar-progression-filter');
     if (!filterSelect) {
-      console.warn('Calendar progression filter element not found');
+      Logger.warn('Calendar progression filter element not found');
       return;
     }
     
@@ -308,7 +321,10 @@ const Calendar = {
     
     if (optionsChanged) {
       // Clear existing options
-      filterSelect.innerHTML = '';
+      // Clear existing options
+      while (filterSelect.firstChild) {
+        filterSelect.removeChild(filterSelect.firstChild);
+      }
       
       // Add "All" option
       const allOption = document.createElement('option');

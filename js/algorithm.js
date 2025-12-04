@@ -2,7 +2,7 @@
 
 // Review intervals in days from memorization date
 // Station 1: Day 0 AM, Station 2: Day 0 PM, Station 3: Day 1, Station 4: Day 4, etc.
-const REVIEW_OFFSETS = [0, 0, 1, 4, 11, 25, 55];
+// Note: REVIEW_OFFSETS is now defined in constants.js
 
 // Date utility functions using device local time
 const DateUtils = {
@@ -38,12 +38,277 @@ const DateUtils = {
 };
 
 const Algorithm = {
+  // Memoization cache for schedule calculations
+  _scheduleCache: new Map(),
+  _cacheMaxSize: 50, // Limit cache size to prevent memory issues
+  
+  /**
+   * Generate hash for items array to detect changes
+   * @param {Array} items - Items array
+   * @returns {string} Hash string
+   */
+  _hashItems(items) {
+    if (!items || items.length === 0) return '0';
+    // Use length and first/last item IDs for quick hash
+    return `${items.length}-${items[0]?.id || ''}-${items[items.length - 1]?.id || ''}`;
+  },
+  
+  /**
+   * Clear schedule cache
+   */
+  clearScheduleCache() {
+    this._scheduleCache.clear();
+  },
+  
+  /**
+   * Check if tasks should be shown based on date and time
+   * @param {boolean} isToday - Whether target date is today
+   * @param {boolean} isSelectedDate - Whether viewing a manually selected date
+   * @param {number} currentHour - Current hour (0-23)
+   * @param {number} morningHour - Morning hour threshold
+   * @returns {boolean} True if tasks should be shown
+   */
+  _shouldShowTask(isToday, isSelectedDate, currentHour, morningHour) {
+    return isSelectedDate || !isToday || (isToday && currentHour >= morningHour);
+  },
+
+  /**
+   * Get new memorization tasks for target date
+   * @param {string} targetDateStr - Target date string
+   * @param {Array} allItems - All items
+   * @param {Object} config - Configuration
+   * @param {number} daysSinceStart - Days since start date
+   * @param {boolean} isToday - Whether target date is today
+   * @param {boolean} isSelectedDate - Whether viewing selected date
+   * @param {number} currentHour - Current hour
+   * @param {number} morningHour - Morning hour threshold
+   * @returns {Array} Array of new memorization tasks
+   */
+  _getNewMemorizationTasks(targetDateStr, allItems, config, daysSinceStart, isToday, isSelectedDate, currentHour, morningHour) {
+    const tasks = [];
+    const totalUnits = config.total_units || DEFAULT_CONFIG.TOTAL_UNITS;
+    
+    if (daysSinceStart < 0 || daysSinceStart >= totalUnits) {
+      return tasks;
+    }
+
+    const unitType = config.unit_type || DEFAULT_CONFIG.UNIT_TYPE;
+    const itemNumber = daysSinceStart + 1;
+    const contentRef = this.formatContentReference(unitType, itemNumber);
+    
+    // Use for...of loop instead of find for better control
+    let existingItem = null;
+    const idPrefix = `item-${unitType}-${itemNumber}-`;
+    for (const item of allItems) {
+      if (item.status === ITEM_STATUS.ACTIVE && item.date_memorized === targetDateStr) {
+        if (item.id === `${idPrefix}${targetDateStr}` || 
+            item.id.startsWith(idPrefix) ||
+            item.id.includes(`-${itemNumber}-${targetDateStr}`)) {
+          existingItem = item;
+          break;
+        }
+      }
+    }
+    
+    if (!existingItem) {
+      // New item - show tasks if time allows
+      if (isToday && !isSelectedDate) {
+        if (currentHour >= morningHour) {
+          tasks.push({
+            id: `new-${targetDateStr}-${itemNumber}-morning`,
+            content_reference: contentRef,
+            date_memorized: targetDateStr,
+            status: ITEM_STATUS.ACTIVE,
+            reviews_completed: [],
+            reviews_missed: [],
+            timeOfDay: TIME_OF_DAY.MORNING,
+            dueStation: STATIONS.STATION_1
+          });
+          tasks.push({
+            id: `new-${targetDateStr}-${itemNumber}-evening`,
+            content_reference: contentRef,
+            date_memorized: targetDateStr,
+            status: ITEM_STATUS.ACTIVE,
+            reviews_completed: [],
+            reviews_missed: [],
+            timeOfDay: TIME_OF_DAY.EVENING,
+            dueStation: STATIONS.STATION_2
+          });
+        }
+      } else {
+        tasks.push({
+          id: `new-${targetDateStr}-${itemNumber}`,
+          content_reference: contentRef,
+          date_memorized: targetDateStr,
+          status: ITEM_STATUS.ACTIVE,
+          reviews_completed: [],
+          reviews_missed: []
+        });
+      }
+    } else {
+      // Item exists, check if it needs review on target date
+      const daysSinceMem = DateUtils.daysDifference(DateUtils.normalizeDate(targetDateStr), existingItem.date_memorized);
+      const isMemorizedOnTargetDate = daysSinceMem === 0;
+      
+      if (isMemorizedOnTargetDate) {
+        if (isToday && !isSelectedDate) {
+          if (currentHour >= morningHour) {
+            tasks.push({ ...existingItem, timeOfDay: TIME_OF_DAY.MORNING, dueStation: STATIONS.STATION_1 });
+            tasks.push({ ...existingItem, timeOfDay: TIME_OF_DAY.EVENING, dueStation: STATIONS.STATION_2 });
+          }
+        } else {
+          tasks.push({ ...existingItem, timeOfDay: TIME_OF_DAY.MORNING, dueStation: STATIONS.STATION_1 });
+          tasks.push({ ...existingItem, timeOfDay: TIME_OF_DAY.EVENING, dueStation: STATIONS.STATION_2 });
+        }
+        } else {
+          const reviewsDue = this.getReviewsDueOnDate(existingItem, targetDateStr);
+          if (reviewsDue.length > 0) {
+            // Use single loop instead of multiple finds
+            let hasMorningReview = false;
+            let hasEveningReview = false;
+            for (const review of reviewsDue) {
+              if (review.station === STATIONS.STATION_1 && review.timeOfDay === TIME_OF_DAY.MORNING) {
+                hasMorningReview = true;
+              }
+              if (review.station === STATIONS.STATION_2 && review.timeOfDay === TIME_OF_DAY.EVENING) {
+                hasEveningReview = true;
+              }
+            }
+            
+            if (isToday && !isSelectedDate) {
+              if (!hasMorningReview && !hasEveningReview && currentHour >= morningHour) {
+                tasks.push(existingItem);
+              }
+            } else {
+              tasks.push(existingItem);
+            }
+          }
+        }
+    }
+    
+    return tasks;
+  },
+
+  /**
+   * Get yesterday review tasks (Station 3)
+   * @param {string} targetDateStr - Target date string
+   * @param {Array} allItems - All items
+   * @param {Date} target - Target date object
+   * @param {boolean} isToday - Whether target date is today
+   * @param {boolean} isSelectedDate - Whether viewing selected date
+   * @param {number} currentHour - Current hour
+   * @param {number} morningHour - Morning hour threshold
+   * @returns {Array} Array of yesterday review tasks
+   */
+  _getYesterdayReviewTasks(targetDateStr, allItems, target, isToday, isSelectedDate, currentHour, morningHour) {
+    const tasks = [];
+    
+    if (!this._shouldShowTask(isToday, isSelectedDate, currentHour, morningHour)) {
+      return tasks;
+    }
+    
+    // Single loop, combine filter and find
+    for (const item of allItems) {
+      if (item.status !== ITEM_STATUS.ACTIVE || !item.date_memorized) continue;
+      
+      const daysPassed = DateUtils.daysDifference(target, item.date_memorized);
+      if (daysPassed === 1) {
+        const reviewsDue = this.getReviewsDueOnDate(item, targetDateStr);
+        // Use for...of instead of find for better performance in small arrays
+        for (const review of reviewsDue) {
+          if (review.station === STATIONS.STATION_3) {
+            tasks.push({ ...item, dueStation: STATIONS.STATION_3 });
+            break; // Found, no need to continue
+          }
+        }
+      }
+    }
+    
+    return tasks;
+  },
+
+  /**
+   * Get spaced review tasks (Stations 4-7)
+   * @param {string} targetDateStr - Target date string
+   * @param {Array} allItems - All items
+   * @param {Date} target - Target date object
+   * @param {Object} config - Configuration
+   * @param {number} daysSinceStart - Days since start date
+   * @param {boolean} isToday - Whether target date is today
+   * @param {boolean} isSelectedDate - Whether viewing selected date
+   * @param {number} currentHour - Current hour
+   * @param {number} morningHour - Morning hour threshold
+   * @returns {Array} Array of spaced review tasks
+   */
+  _getSpacedReviewTasks(targetDateStr, allItems, target, config, daysSinceStart, isToday, isSelectedDate, currentHour, morningHour) {
+    const tasks = [];
+    const totalUnits = config.total_units || DEFAULT_CONFIG.TOTAL_UNITS;
+    const expectedOffsets = SPACED_REVIEW_OFFSETS || [4, 11, 25, 55];
+    const expectedStations = SPACED_REVIEW_STATIONS || [4, 5, 6, 7];
+    
+    if (!this._shouldShowTask(isToday, isSelectedDate, currentHour, morningHour)) {
+      return tasks;
+    }
+    
+    // Use Map for O(1) lookup of expected offsets by station
+    const offsetMap = new Map();
+    expectedStations.forEach((station, index) => {
+      offsetMap.set(station, expectedOffsets[index]);
+    });
+    
+    // Pre-calculate content reference for new item check
+    const newItemContentRef = daysSinceStart >= 0 && daysSinceStart < totalUnits
+      ? this.formatContentReference(config.unit_type || DEFAULT_CONFIG.UNIT_TYPE, daysSinceStart + 1)
+      : null;
+    
+    // Single loop through items
+    for (const item of allItems) {
+      if (item.status !== ITEM_STATUS.ACTIVE || !item.date_memorized) continue;
+      
+      const daysPassed = DateUtils.daysDifference(target, item.date_memorized);
+      
+      // Skip if this item is being handled in new memorization section
+      if (daysPassed === 0 && daysSinceStart >= 0 && daysSinceStart < totalUnits && 
+          item.content_reference === newItemContentRef) {
+        continue;
+      }
+      
+      const reviewsDue = this.getReviewsDueOnDate(item, targetDateStr);
+      
+      // Process reviews in single loop
+      for (const review of reviewsDue) {
+        const station = review.station;
+        
+        // Handle stations 1 & 2 (same day)
+        if (station === STATIONS.STATION_1 || station === STATIONS.STATION_2) {
+          if (daysPassed === 0) {
+            if (station === STATIONS.STATION_1 && review.timeOfDay === TIME_OF_DAY.MORNING) {
+              tasks.push({ ...item, timeOfDay: TIME_OF_DAY.MORNING, dueStation: STATIONS.STATION_1 });
+            } else if (station === STATIONS.STATION_2 && review.timeOfDay === TIME_OF_DAY.EVENING) {
+              tasks.push({ ...item, timeOfDay: TIME_OF_DAY.EVENING, dueStation: STATIONS.STATION_2 });
+            }
+          }
+        }
+        // Handle stations 4-7 (spaced reviews) - use Map for O(1) lookup
+        else if (station >= STATIONS.STATION_4 && station <= STATIONS.STATION_7) {
+          const expectedOffset = offsetMap.get(station);
+          if (expectedOffset !== undefined && daysPassed === expectedOffset) {
+            tasks.push({ ...item, dueStation: station });
+          }
+        }
+      }
+    }
+    
+    return tasks;
+  },
+
   // Calculate all 7 review dates for a memorization date
   calculateReviewDates(memorizationDate) {
     const memDate = DateUtils.normalizeDate(memorizationDate);
     const dates = [];
     
-    REVIEW_OFFSETS.forEach((offset, index) => {
+    const reviewOffsets = REVIEW_OFFSETS || [0, 0, 1, 4, 11, 25, 55];
+    reviewOffsets.forEach((offset, index) => {
       const reviewDate = new Date(memDate);
       reviewDate.setDate(reviewDate.getDate() + offset);
       
@@ -52,13 +317,13 @@ const Algorithm = {
         dates.push({
           station: index + 1,
           date: DateUtils.getLocalDateString(reviewDate),
-          timeOfDay: index === 0 ? 'morning' : 'evening'
+          timeOfDay: index === 0 ? TIME_OF_DAY.MORNING : TIME_OF_DAY.EVENING
         });
       } else {
         dates.push({
           station: index + 1,
           date: DateUtils.getLocalDateString(reviewDate),
-          timeOfDay: 'any'
+          timeOfDay: TIME_OF_DAY.ANY
         });
       }
     });
@@ -68,10 +333,11 @@ const Algorithm = {
 
   // Get the review date for a specific station
   getReviewDateForStation(memorizationDate, stationNumber) {
-    if (stationNumber < 1 || stationNumber > 7) return null;
+    if (stationNumber < STATIONS.MIN || stationNumber > STATIONS.MAX) return null;
     
     const memDate = DateUtils.normalizeDate(memorizationDate);
-    const offset = REVIEW_OFFSETS[stationNumber - 1];
+    const reviewOffsets = REVIEW_OFFSETS || [0, 0, 1, 4, 11, 25, 55];
+    const offset = reviewOffsets[stationNumber - 1];
     const reviewDate = new Date(memDate);
     reviewDate.setDate(reviewDate.getDate() + offset);
     
@@ -85,7 +351,8 @@ const Algorithm = {
     const daysPassed = DateUtils.daysDifference(targetDate, item.date_memorized);
     
     // Get expected offset for this station
-    const expectedOffset = REVIEW_OFFSETS[stationNumber - 1];
+    const reviewOffsets = REVIEW_OFFSETS || [0, 0, 1, 4, 11, 25, 55];
+    const expectedOffset = reviewOffsets[stationNumber - 1];
     
     // For same-day reviews (Station 1 & 2), check if it's the same day
     if (expectedOffset === 0) {
@@ -103,19 +370,20 @@ const Algorithm = {
     
     const dueReviews = [];
     
-    REVIEW_OFFSETS.forEach((offset, index) => {
+    const reviewOffsets = REVIEW_OFFSETS || [0, 0, 1, 4, 11, 25, 55];
+    reviewOffsets.forEach((offset, index) => {
       const station = index + 1;
       
       if (offset === 0 && daysPassed === 0) {
         // Same day reviews - both stations are due
         dueReviews.push({
           station: station,
-          timeOfDay: station === 1 ? 'morning' : 'evening'
+          timeOfDay: station === STATIONS.STATION_1 ? TIME_OF_DAY.MORNING : TIME_OF_DAY.EVENING
         });
       } else if (daysPassed === offset) {
         dueReviews.push({
           station: station,
-          timeOfDay: 'any'
+          timeOfDay: TIME_OF_DAY.ANY
         });
       }
     });
@@ -123,8 +391,15 @@ const Algorithm = {
     return dueReviews;
   },
 
-  // Generate daily schedule for a target date
-  // isSelectedDate: true if viewing a manually selected date (not real-time today)
+  /**
+   * Generate daily schedule for a target date
+   * @param {string|Date} targetDate - Target date for schedule
+   * @param {Array} allItems - All memorization items
+   * @param {Object} config - User configuration
+   * @param {Function} storageCheckFn - Function to check review completion (optional, not used but kept for compatibility)
+   * @param {boolean} isSelectedDate - Whether viewing a manually selected date (not real-time today)
+   * @returns {Object} Schedule object with new_memorization, yesterday_review, spaced_review arrays
+   */
   getDailySchedule(targetDate, allItems, config, storageCheckFn = null, isSelectedDate = false) {
     const target = DateUtils.normalizeDate(targetDate);
     const targetDateStr = DateUtils.getLocalDateString(target);
@@ -132,6 +407,18 @@ const Algorithm = {
     const currentHour = now.getHours();
     const today = DateUtils.normalizeDate(now);
     const todayStr = DateUtils.getLocalDateString(today);
+    
+    // Check cache (only for non-today dates to avoid stale data)
+    if (!isSelectedDate && targetDateStr !== todayStr) {
+      const cacheKey = `${targetDateStr}-${config.start_date}-${allItems.length}`;
+      const cached = this._scheduleCache.get(cacheKey);
+      if (cached) {
+        const itemsHash = this._hashItems(allItems);
+        if (cached.itemsHash === itemsHash) {
+          return cached.schedule;
+        }
+      }
+    }
     
     const schedule = {
       new_memorization: [],
@@ -144,14 +431,8 @@ const Algorithm = {
     }
 
     // Get morning and evening hours from config
-    const morningHour = config.morning_hour !== undefined ? config.morning_hour : 6;
-    const eveningHour = config.evening_hour !== undefined ? config.evening_hour : 20;
-
-    // Use provided storage check function or fallback to global Storage
-    const isReviewCompleted = storageCheckFn || 
-      (typeof Storage !== 'undefined' && Storage.isReviewCompleted 
-        ? (id, station, date) => Storage.isReviewCompleted(id, station, date)
-        : () => false);
+    const morningHour = config.morning_hour !== undefined ? config.morning_hour : DEFAULT_CONFIG.MORNING_HOUR;
+    const eveningHour = config.evening_hour !== undefined ? config.evening_hour : DEFAULT_CONFIG.EVENING_HOUR;
 
     const startDate = DateUtils.normalizeDate(config.start_date);
     const daysSinceStart = DateUtils.daysDifference(target, startDate);
@@ -159,199 +440,48 @@ const Algorithm = {
     // For selected dates, always show tasks regardless of time
     // For real-time today, respect time-based filtering
     const isToday = targetDateStr === todayStr;
-    const shouldShowTasks = isSelectedDate || !isToday || (isToday && currentHour >= morningHour);
 
-    // Calculate new memorization items for target date (1 unit per day)
-    const totalUnits = config.total_units || 30;
-    if (daysSinceStart >= 0 && daysSinceStart < totalUnits) {
-      const unitType = config.unit_type || 'page';
-      // 1 unit per day, so itemNumber = daysSinceStart + 1
-      const itemNumber = daysSinceStart + 1;
-      const contentRef = this.formatContentReference(unitType, itemNumber);
-      
-      // Check if this item already exists by date_memorized and item number pattern
-      // Don't check by content_reference as it changes with language
-      const existingItem = allItems.find(
-        item => item.status === 'active' &&
-                item.date_memorized === targetDateStr &&
-                (item.id.startsWith(`item-${unitType}-${itemNumber}-`) ||
-                 item.id.includes(`-${itemNumber}-${targetDateStr}`))
-      );
-      
-      if (!existingItem) {
-        // New item - items should be created in renderTodayView before schedule generation
-        // Here we just indicate it should be created, but don't create it
-        if (isToday && !isSelectedDate) {
-          // For real-time today, show both morning and evening tasks if morning hour has passed
-          if (currentHour >= morningHour) {
-            schedule.new_memorization.push({
-              id: `new-${targetDateStr}-${itemNumber}-morning`,
-              content_reference: contentRef,
-              date_memorized: targetDateStr,
-              status: 'active',
-              reviews_completed: [],
-              reviews_missed: [],
-              timeOfDay: 'morning',
-              dueStation: 1
-            });
-            // Also show evening task (both tasks should be visible on first day)
-            schedule.new_memorization.push({
-              id: `new-${targetDateStr}-${itemNumber}-evening`,
-              content_reference: contentRef,
-              date_memorized: targetDateStr,
-              status: 'active',
-              reviews_completed: [],
-              reviews_missed: [],
-              timeOfDay: 'evening',
-              dueStation: 2
-            });
-          }
-        } else {
-          // For selected dates or future dates, always include
-          schedule.new_memorization.push({
-            id: `new-${targetDateStr}-${itemNumber}`,
-            content_reference: contentRef,
-            date_memorized: targetDateStr,
-            status: 'active',
-            reviews_completed: [],
-            reviews_missed: []
-          });
-        }
-      } else {
-        // Item exists, check if it needs review on target date
-        const daysSinceMem = DateUtils.daysDifference(target, existingItem.date_memorized);
-        const isMemorizedOnTargetDate = daysSinceMem === 0;
-        
-        // If item was memorized on target date, show both morning and evening tasks
-        if (isMemorizedOnTargetDate && isToday && !isSelectedDate) {
-          // For real-time today, respect time filtering
-          if (currentHour >= morningHour) {
-            schedule.new_memorization.push({
-              ...existingItem,
-              timeOfDay: 'morning',
-              dueStation: 1
-            });
-            schedule.new_memorization.push({
-              ...existingItem,
-              timeOfDay: 'evening',
-              dueStation: 2
-            });
-          }
-        } else if (isMemorizedOnTargetDate && (isSelectedDate || !isToday)) {
-          // For selected dates or past dates, always show both tasks
-          schedule.new_memorization.push({
-            ...existingItem,
-            timeOfDay: 'morning',
-            dueStation: 1
-          });
-          schedule.new_memorization.push({
-            ...existingItem,
-            timeOfDay: 'evening',
-            dueStation: 2
-          });
-        } else {
-          // For other days, check reviews normally
-          const reviewsDue = this.getReviewsDueOnDate(existingItem, targetDateStr);
-          
-          if (reviewsDue.length > 0) {
-            // Filter by time of day for stations 1 & 2
-            const morningReview = reviewsDue.find(r => r.station === 1 && r.timeOfDay === 'morning');
-            const eveningReview = reviewsDue.find(r => r.station === 2 && r.timeOfDay === 'evening');
-            
-            if (isToday && !isSelectedDate) {
-              if (!morningReview && !eveningReview) {
-                // Other stations (not 1 or 2) - show after morning hour
-                if (currentHour >= morningHour) {
-                  schedule.new_memorization.push(existingItem);
-                }
-              }
-            } else {
-              // For selected dates or future dates, include all
-              schedule.new_memorization.push(existingItem);
-            }
-          }
-        }
-      }
-    }
+    // Get new memorization tasks
+    schedule.new_memorization = this._getNewMemorizationTasks(
+      targetDateStr, allItems, config, daysSinceStart, isToday, isSelectedDate, currentHour, morningHour
+    );
 
-    // Check ALL existing items for reviews due on target date
-    // This ensures we catch reviews for all units, not just the one being memorized on target date
+    // Get yesterday review tasks (Station 3)
+    schedule.yesterday_review = this._getYesterdayReviewTasks(
+      targetDateStr, allItems, target, isToday, isSelectedDate, currentHour, morningHour
+    );
+
+    // Get spaced review tasks (Stations 4-7 and same-day reviews from existing items)
+    const spacedTasks = this._getSpacedReviewTasks(
+      targetDateStr, allItems, target, config, daysSinceStart, isToday, isSelectedDate, currentHour, morningHour
+    );
     
-    allItems.forEach(item => {
-      if (item.status !== 'active' || !item.date_memorized) return;
-      
-      const daysPassed = DateUtils.daysDifference(target, item.date_memorized);
-      
-      // Skip if this item is being handled in the new memorization section above
-      // (only skip if it's the item being memorized on target date)
-      const isNewItemOnTargetDate = daysPassed === 0 && 
-        daysSinceStart >= 0 && 
-        daysSinceStart < totalUnits &&
-        item.content_reference === this.formatContentReference(config.unit_type || 'page', daysSinceStart + 1);
-      
-      if (isNewItemOnTargetDate) {
-        // This item is already handled in the new memorization section above
-        return;
-      }
-      
-      // Check all review stations for this item
-      const reviewsDue = this.getReviewsDueOnDate(item, targetDateStr);
-      
-      if (reviewsDue.length > 0) {
-        reviewsDue.forEach(review => {
-          const station = review.station;
-          const completed = isReviewCompleted(item.id, station, targetDateStr);
-          
-          // Show all reviews regardless of completion status (like new memorization tasks)
-          // Station 1 & 2: Same day (morning/evening)
-          if (station === 1 || station === 2) {
-            const isMemorizedOnTargetDate = daysPassed === 0;
-            if (isMemorizedOnTargetDate) {
-              // Show both morning and evening tasks
-              if (isSelectedDate || !isToday || (isToday && currentHour >= morningHour)) {
-                if (station === 1 && review.timeOfDay === 'morning') {
-                  schedule.new_memorization.push({
-                    ...item,
-                    timeOfDay: 'morning',
-                    dueStation: 1
-                  });
-                } else if (station === 2 && review.timeOfDay === 'evening') {
-                  schedule.new_memorization.push({
-                    ...item,
-                    timeOfDay: 'evening',
-                    dueStation: 2
-                  });
-                }
-              }
-            }
-          }
-          // Station 3: +1 day review (show even if completed)
-          else if (station === 3 && daysPassed === 1) {
-            if (isSelectedDate || !isToday || (isToday && currentHour >= morningHour)) {
-              schedule.yesterday_review.push({
-                ...item,
-                dueStation: 3
-              });
-            }
-          }
-          // Stations 4-7: Spaced reviews (show even if completed)
-          else if (station >= 4 && station <= 7) {
-            const expectedOffsets = [4, 11, 25, 55];
-            const expectedStations = [4, 5, 6, 7];
-            const stationIndex = expectedStations.indexOf(station);
-            
-            if (stationIndex >= 0 && daysPassed === expectedOffsets[stationIndex]) {
-              if (isSelectedDate || !isToday || (isToday && currentHour >= morningHour)) {
-                schedule.spaced_review.push({
-                  ...item,
-                  dueStation: station
-                });
-              }
-            }
-          }
-        });
+    // Separate same-day reviews (stations 1 & 2) from spaced reviews
+    spacedTasks.forEach(task => {
+      if (task.dueStation === STATIONS.STATION_1 || task.dueStation === STATIONS.STATION_2) {
+        schedule.new_memorization.push(task);
+      } else {
+        schedule.spaced_review.push(task);
       }
     });
+
+    // Cache result for non-today dates
+    if (!isSelectedDate && targetDateStr !== todayStr) {
+      const cacheKey = `${targetDateStr}-${config.start_date}-${allItems.length}`;
+      const itemsHash = this._hashItems(allItems);
+      
+      // Limit cache size
+      if (this._scheduleCache.size >= this._cacheMaxSize) {
+        // Remove oldest entry (first in Map)
+        const firstKey = this._scheduleCache.keys().next().value;
+        this._scheduleCache.delete(firstKey);
+      }
+      
+      this._scheduleCache.set(cacheKey, {
+        schedule: JSON.parse(JSON.stringify(schedule)), // Deep clone
+        itemsHash: itemsHash
+      });
+    }
 
     return schedule;
   },
@@ -426,7 +556,7 @@ const Algorithm = {
     }
 
     // Calculate expected items up to and including today (1 unit per day)
-    const totalUnits = config.total_units || 30;
+    const totalUnits = config.total_units || DEFAULT_CONFIG.TOTAL_UNITS;
     const expectedItemsCount = Math.min(daysSinceStart + 1, totalUnits);
     
     // Build a map of expected items by date
@@ -439,7 +569,7 @@ const Algorithm = {
       
       // 1 unit per day, so itemNumber = day + 1
       const itemNumber = day + 1;
-      const contentRef = this.formatContentReference(config.unit_type || 'page', itemNumber);
+      const contentRef = this.formatContentReference(config.unit_type || DEFAULT_CONFIG.UNIT_TYPE, itemNumber);
       if (!expectedItemsByDate[dateStr]) {
         expectedItemsByDate[dateStr] = [];
       }
@@ -450,19 +580,22 @@ const Algorithm = {
       });
     }
     
-    // Get actual items that exist
-    const activeItems = allItems.filter(item => item.status === 'active');
+    // Get actual items that exist - use single loop with Map for O(1) lookups
     const itemsMap = new Map();
-    activeItems.forEach(item => {
-      itemsMap.set(item.content_reference, item);
-    });
+    for (const item of allItems) {
+      if (item.status === ITEM_STATUS.ACTIVE) {
+        itemsMap.set(item.content_reference, item);
+      }
+    }
     
     // Count items and reviews
     let totalItems = 0;
     let totalReviews = 0;
     let completedReviews = 0;
     
-    Object.values(expectedItemsByDate).flat().forEach(expectedItem => {
+    // Use Set for O(1) lookup of completed reviews
+    const expectedItems = Object.values(expectedItemsByDate).flat();
+    for (const expectedItem of expectedItems) {
       const actualItem = itemsMap.get(expectedItem.content_reference);
       const expectedItemDate = DateUtils.normalizeDate(expectedItem.date_memorized);
       
@@ -475,27 +608,29 @@ const Algorithm = {
       if (actualItem && actualItem.date_memorized) {
         // Calculate which reviews should have been completed by today
         const reviewDates = this.calculateReviewDates(actualItem.date_memorized);
-        const reviewsDueByToday = reviewDates.filter(review => {
+        const reviewsDueByToday = [];
+        for (const review of reviewDates) {
           const reviewDate = DateUtils.normalizeDate(review.date);
-          return reviewDate <= today;
-        });
+          if (reviewDate <= today) {
+            reviewsDueByToday.push(review);
+          }
+        }
         
         // Count reviews that should be done by today
         totalReviews += reviewsDueByToday.length;
         
-        // Count completed reviews that were due by today
+        // Count completed reviews - use Set for O(1) lookup
         if (actualItem.reviews_completed && actualItem.reviews_completed.length > 0) {
-          reviewsDueByToday.forEach(review => {
-            // Check if this review was completed
+          const completedSet = new Set(actualItem.reviews_completed);
+          for (const review of reviewsDueByToday) {
             const reviewKey = `${review.station}-${review.date}`;
-            const isCompleted = actualItem.reviews_completed.includes(reviewKey);
-            if (isCompleted) {
+            if (completedSet.has(reviewKey)) {
               completedReviews++;
             }
-          });
+          }
         }
       }
-    });
+    }
     
     return {
       totalItems,
