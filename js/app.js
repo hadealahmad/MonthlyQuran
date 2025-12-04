@@ -42,7 +42,7 @@ const App = {
     } else {
       // Show setup
       Theme.init();
-      i18n.init('en');
+      i18n.init(DEFAULT_CONFIG.LANGUAGE);
       UI.showView('setup-view');
       UI.renderSetupView();
     }

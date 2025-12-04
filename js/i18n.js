@@ -300,11 +300,11 @@ const translations = {
 };
 
 const i18n = {
-  currentLanguage: 'en',
+  currentLanguage: DEFAULT_CONFIG.LANGUAGE,
 
   // Initialize i18n with language from config
   init(language) {
-    this.currentLanguage = language || 'en';
+    this.currentLanguage = language || DEFAULT_CONFIG.LANGUAGE;
     this.updateDocumentDirection();
   },
 
