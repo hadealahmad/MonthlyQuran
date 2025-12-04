@@ -94,7 +94,8 @@ const UI = {
           
           // Render the view if needed
           if (viewId === 'today-view') {
-            this.renderTodayView();
+            // Always show today's tasks when clicking the today tab
+            this.renderTodayView(new Date());
           } else if (viewId === 'progress-view') {
             this.renderProgressView();
           } else if (viewId === 'calendar-view') {
