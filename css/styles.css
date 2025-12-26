@@ -20,6 +20,9 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   transition: background-color 0.2s, color 0.2s;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* App Container */
@@ -155,11 +158,16 @@ body {
 
 /* Setup View */
 #setup-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+#setup-view .main {
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  padding-top: calc(1rem + env(safe-area-inset-top, 0));
-  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0));
+  width: 100%;
 }
 
 #setup-view .container {
@@ -567,12 +575,12 @@ body {
     min-height: 4rem;
     height: auto;
   }
-  
+
   .calendar-task-indicators {
     gap: 0.125rem;
     padding-top: 0.125rem;
   }
-  
+
   .calendar-task-indicator {
     width: 1rem;
     height: 1rem;
@@ -609,6 +617,7 @@ body {
 
 /* Print Styles */
 @media print {
+
   .header-actions,
   .date-selector,
   .schedule-item-actions {
@@ -623,4 +632,3 @@ body {
     display: none;
   }
 }
-

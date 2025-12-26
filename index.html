@@ -35,94 +35,98 @@
     <div id="app">
         <!-- Setup View (shown when no config exists) -->
         <div id="setup-view" class="view hidden">
-            <div class="container">
-                <div class="card">
-                    <h1 class="card-title" data-i18n="app.title">Monthly Quran</h1>
-                    <p class="card-description" data-i18n="setup.title">Set up your memorization plan</p>
+            <main class="main">
+                <div class="container">
+                    <div class="card">
+                        <h1 class="card-title" data-i18n="app.title">Monthly Quran</h1>
+                        <p class="card-description" data-i18n="setup.title">Set up your memorization plan</p>
 
-                    <form id="setup-form">
-                        <div class="form-group">
-                            <label for="surah-preset" data-i18n="setup.surahPreset">Big Surahs Preset (Optional)</label>
-                            <select id="surah-preset" class="input">
-                                <option value="" data-i18n="setup.surahPresetNone">None</option>
-                            </select>
-                        </div>
+                        <form id="setup-form">
+                            <div class="form-group">
+                                <label for="surah-preset" data-i18n="setup.surahPreset">Big Surahs Preset
+                                    (Optional)</label>
+                                <select id="surah-preset" class="input">
+                                    <option value="" data-i18n="setup.surahPresetNone">None</option>
+                                </select>
+                            </div>
 
-                        <div class="setup-toggles">
-                            <div class="setup-toggle-group">
-                                <div class="toggle-options" id="unit-type-toggle" role="group" aria-label="Unit Type">
-                                    <button type="button" class="toggle-option" data-value="page"
-                                        data-i18n="units.page">Page</button>
-                                    <button type="button" class="toggle-option" data-value="verse"
-                                        data-i18n="units.verse">Ayah</button>
-                                    <button type="button" class="toggle-option" data-value="hizb"
-                                        data-i18n="units.hizb">Hizb</button>
-                                    <button type="button" class="toggle-option" data-value="juz"
-                                        data-i18n="units.juz">Juz</button>
+                            <div class="setup-toggles">
+                                <div class="setup-toggle-group">
+                                    <div class="toggle-options" id="unit-type-toggle" role="group"
+                                        aria-label="Unit Type">
+                                        <button type="button" class="toggle-option" data-value="page"
+                                            data-i18n="units.page">Page</button>
+                                        <button type="button" class="toggle-option" data-value="verse"
+                                            data-i18n="units.verse">Ayah</button>
+                                        <button type="button" class="toggle-option" data-value="hizb"
+                                            data-i18n="units.hizb">Hizb</button>
+                                        <button type="button" class="toggle-option" data-value="juz"
+                                            data-i18n="units.juz">Juz</button>
+                                    </div>
+                                </div>
+
+                                <div class="setup-toggle-group">
+                                    <div class="toggle-options" id="setup-language-toggle" role="group"
+                                        aria-label="Language">
+                                        <button type="button" class="toggle-option" data-value="en">EN</button>
+                                        <button type="button" class="toggle-option" data-value="ar">AR</button>
+                                    </div>
+                                </div>
+
+                                <div class="setup-toggle-group">
+                                    <div class="toggle-options" id="setup-theme-toggle" role="group" aria-label="Theme">
+                                        <button type="button" class="toggle-option" data-value="light"
+                                            data-i18n="theme.light">Light</button>
+                                        <button type="button" class="toggle-option" data-value="dark"
+                                            data-i18n="theme.dark">Dark</button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="setup-toggle-group">
-                                <div class="toggle-options" id="setup-language-toggle" role="group"
-                                    aria-label="Language">
-                                    <button type="button" class="toggle-option" data-value="en">EN</button>
-                                    <button type="button" class="toggle-option" data-value="ar">AR</button>
+                            <div class="form-group" id="start-page-group" style="display: none;">
+                                <label for="start-page" data-i18n="setup.startPage">Start Page Number</label>
+                                <input type="number" id="start-page" class="input" min="1" max="604" value="1">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="total-units" id="total-units-label" data-i18n="setup.totalUnits">Total
+                                    Units</label>
+                                <div class="number-input-group">
+                                    <button type="button" class="number-input-btn" id="total-units-decrease"
+                                        aria-label="Decrease">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                    </button>
+                                    <input type="number" id="total-units" class="input number-input" min="1" value="30"
+                                        required>
+                                    <button type="button" class="number-input-btn" id="total-units-increase"
+                                        aria-label="Increase">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="setup-toggle-group">
-                                <div class="toggle-options" id="setup-theme-toggle" role="group" aria-label="Theme">
-                                    <button type="button" class="toggle-option" data-value="light"
-                                        data-i18n="theme.light">Light</button>
-                                    <button type="button" class="toggle-option" data-value="dark"
-                                        data-i18n="theme.dark">Dark</button>
-                                </div>
+                            <div class="form-group">
+                                <label for="start-date" data-i18n="setup.startDate">Start Date</label>
+                                <input type="date" id="start-date" class="input" required>
                             </div>
-                        </div>
 
-                        <div class="form-group" id="start-page-group" style="display: none;">
-                            <label for="start-page" data-i18n="setup.startPage">Start Page Number</label>
-                            <input type="number" id="start-page" class="input" min="1" max="604" value="1">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="total-units" id="total-units-label" data-i18n="setup.totalUnits">Total
-                                Units</label>
-                            <div class="number-input-group">
-                                <button type="button" class="number-input-btn" id="total-units-decrease"
-                                    aria-label="Decrease">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                </button>
-                                <input type="number" id="total-units" class="input number-input" min="1" value="30"
-                                    required>
-                                <button type="button" class="number-input-btn" id="total-units-increase"
-                                    aria-label="Increase">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    </svg>
-                                </button>
+                            <div class="form-group">
+                                <label for="progression-name" data-i18n="setup.progressionName">Progression Name</label>
+                                <input type="text" id="progression-name" class="input"
+                                    placeholder="e.g. Juz 1, Surah Al-Baqarah" required>
                             </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label for="start-date" data-i18n="setup.startDate">Start Date</label>
-                            <input type="date" id="start-date" class="input" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="progression-name" data-i18n="setup.progressionName">Progression Name</label>
-                            <input type="text" id="progression-name" class="input"
-                                placeholder="e.g. Juz 1, Surah Al-Baqarah" required>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-default btn-full"
-                            data-i18n="setup.startButton">Start Memorization</button>
-                    </form>
+                            <button type="submit" class="btn btn-primary btn-default btn-full"
+                                data-i18n="setup.startButton">Start Memorization</button>
+                        </form>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
 
         <!-- Today View (main view) -->
@@ -236,58 +240,80 @@
 
         <!-- Settings View -->
         <div id="settings-view" class="view hidden">
-            <div class="container">
-                <div class="card">
-                    <h1 class="card-title" data-i18n="settings.title">Settings</h1>
-                    <p class="card-description" data-i18n="settings.configuration">Configuration</p>
-
-                    <form id="settings-form">
-                        <div class="setup-toggles">
-                            <div class="setup-toggle-group">
-                                <label data-i18n="setup.language">Language</label>
-                                <div class="toggle-options" id="settings-language-toggle" role="group"
-                                    aria-label="Language">
-                                    <button type="button" class="toggle-option" data-value="en">EN</button>
-                                    <button type="button" class="toggle-option" data-value="ar">AR</button>
-                                </div>
-                            </div>
-
-                            <div class="setup-toggle-group">
-                                <label data-i18n="theme.light">Theme</label>
-                                <div class="toggle-options" id="settings-theme-toggle" role="group" aria-label="Theme">
-                                    <button type="button" class="toggle-option" data-value="light"
-                                        data-i18n="theme.light">Light</button>
-                                    <button type="button" class="toggle-option" data-value="dark"
-                                        data-i18n="theme.dark">Dark</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="settings-morning-hour" data-i18n="settings.morningHour">Morning Review
-                                Hour</label>
-                            <input type="time" id="settings-morning-hour" class="input" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="settings-evening-hour" data-i18n="settings.eveningHour">Evening Review
-                                Hour</label>
-                            <input type="time" id="settings-evening-hour" class="input" required>
-                        </div>
-
-                        <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
-                            <button type="button" id="settings-privacy-btn" class="btn btn-outline btn-full"
-                                style="margin-bottom: 0.75rem;">Privacy Policy</button>
-                            <button type="button" id="settings-export-btn" class="btn btn-outline btn-full"
-                                data-i18n="settings.exportData">Export Data</button>
-                            <button type="button" id="settings-import-btn" class="btn btn-outline btn-full"
-                                data-i18n="settings.importData">Import Data</button>
-                            <button type="button" id="settings-reset-btn" class="btn btn-destructive btn-full"
-                                data-i18n="settings.resetApp">Reset Application</button>
-                        </div>
-                    </form>
+            <header class="header">
+                <div class="header-content">
+                    <h1 class="header-title" data-i18n="settings.title">Settings</h1>
+                    <div class="header-actions">
+                        <button id="language-toggle-settings" class="btn-icon" data-i18n-aria="aria.toggleLanguage">
+                            <span class="lang-text">EN</span>
+                        </button>
+                        <button id="theme-toggle-settings" class="btn-icon" data-i18n-aria="aria.toggleTheme">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="5"></circle>
+                                <path
+                                    d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </header>
+
+            <main class="main">
+                <div class="container">
+                    <div class="card">
+                        <h1 class="card-title" data-i18n="settings.title">Settings</h1>
+                        <p class="card-description" data-i18n="settings.configuration">Configuration</p>
+
+                        <form id="settings-form">
+                            <div class="setup-toggles">
+                                <div class="setup-toggle-group">
+                                    <label data-i18n="setup.language">Language</label>
+                                    <div class="toggle-options" id="settings-language-toggle" role="group"
+                                        aria-label="Language">
+                                        <button type="button" class="toggle-option" data-value="en">EN</button>
+                                        <button type="button" class="toggle-option" data-value="ar">AR</button>
+                                    </div>
+                                </div>
+
+                                <div class="setup-toggle-group">
+                                    <label data-i18n="theme.light">Theme</label>
+                                    <div class="toggle-options" id="settings-theme-toggle" role="group"
+                                        aria-label="Theme">
+                                        <button type="button" class="toggle-option" data-value="light"
+                                            data-i18n="theme.light">Light</button>
+                                        <button type="button" class="toggle-option" data-value="dark"
+                                            data-i18n="theme.dark">Dark</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="settings-morning-hour" data-i18n="settings.morningHour">Morning Review
+                                    Hour</label>
+                                <input type="time" id="settings-morning-hour" class="input" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="settings-evening-hour" data-i18n="settings.eveningHour">Evening Review
+                                    Hour</label>
+                                <input type="time" id="settings-evening-hour" class="input" required>
+                            </div>
+
+                            <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                                <button type="button" id="settings-privacy-btn" class="btn btn-outline btn-full"
+                                    style="margin-bottom: 0.75rem;">Privacy Policy</button>
+                                <button type="button" id="settings-export-btn" class="btn btn-outline btn-full"
+                                    data-i18n="settings.exportData">Export Data</button>
+                                <button type="button" id="settings-import-btn" class="btn btn-outline btn-full"
+                                    data-i18n="settings.importData">Import Data</button>
+                                <button type="button" id="settings-reset-btn" class="btn btn-destructive btn-full"
+                                    data-i18n="settings.resetApp">Reset Application</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </main>
         </div>
 
         <!-- Credits View -->
