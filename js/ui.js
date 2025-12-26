@@ -1081,6 +1081,7 @@ const UI = {
         });
       });
     }
+
   },
 
   // Initialize UI event listeners
@@ -1147,6 +1148,10 @@ const UI = {
           const morningTime = morningHourInput.value;
           config.morning_hour = parseInt(morningTime.split(':')[0]);
           Storage.saveConfig(config);
+
+          if (typeof Notifications !== 'undefined') {
+            Notifications.schedule();
+          }
         }
       });
     }
@@ -1158,6 +1163,10 @@ const UI = {
           const eveningTime = eveningHourInput.value;
           config.evening_hour = parseInt(eveningTime.split(':')[0]);
           Storage.saveConfig(config);
+
+          if (typeof Notifications !== 'undefined') {
+            Notifications.schedule();
+          }
         }
       });
     }

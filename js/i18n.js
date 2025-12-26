@@ -188,6 +188,11 @@ const translations = {
       internetItem1: 'Initial download of Quran metadata/text',
       internetItem2: 'Playing Quran audio recitations',
       internetItem3: 'Updating the application'
+    },
+    notifications: {
+      morningReminder: 'Time for your morning review!',
+      eveningReminder: 'Time for your evening review!',
+      title: 'Monthly Quran'
     }
   },
   ar: {
@@ -377,6 +382,11 @@ const translations = {
       internetItem1: 'التنزيل الأولي لبيانات القرآن الكريم',
       internetItem2: 'تشغيل التلاوات الصوتية للقرآن',
       internetItem3: 'تحديث التطبيق'
+    },
+    notifications: {
+      morningReminder: 'حان وقت المراجعة الصباحية!',
+      eveningReminder: 'حان وقت المراجعة المسائية!',
+      title: 'القرآن الشهري'
     }
   }
 };
