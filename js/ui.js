@@ -1181,18 +1181,46 @@ const UI = {
     // Export button
     const exportBtn = DOMCache.getElementById('settings-export-btn');
     if (exportBtn) {
-      exportBtn.addEventListener('click', () => {
+      exportBtn.addEventListener('click', async () => {
         const data = Storage.exportData();
-        if (data) {
-          const blob = new Blob([data], { type: 'application/json' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `quran-memorization-backup-${DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+        if (!data) return;
+
+        const fileName = `quran-memorization-backup-${DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]}.json`;
+
+        // Check if running in a Capacitor environment
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+          try {
+            const { Filesystem } = Capacitor.Plugins;
+            const { Share } = Capacitor.Plugins;
+
+            if (!Filesystem || !Share) {
+              throw new Error('Capacitor plugins not available. Ensure they are installed and synced.');
+            }
+
+            // Save the data to a temporary file
+            const result = await Filesystem.writeFile({
+              path: fileName,
+              data: data,
+              directory: 'CACHE', // Use CACHE directory for sharing
+              encoding: 'utf8'
+            });
+
+            // Share the file
+            await Share.share({
+              title: i18n.t('settings.exportData'),
+              text: 'Monthly Quran Backup',
+              url: result.uri,
+              dialogTitle: i18n.t('settings.exportData')
+            });
+
+          } catch (error) {
+            Logger.error('Native export failed:', error);
+            // Fallback to standard download if plugin fails or is missing
+            this.handleBrowserDownload(data, fileName);
+          }
+        } else {
+          // Standard browser download for PWA/Web
+          this.handleBrowserDownload(data, fileName);
         }
       });
     }
@@ -1405,5 +1433,18 @@ const UI = {
       Logger.error('Migration failed', e);
       Dialog.showShadcnAlert(i18n.t('common.error'), i18n.t('progress.updateError') + ': ' + e.message, null, null, i18n.t('common.ok'), '', 'destructive');
     }
+  },
+
+  // Helper for standard browser download
+  handleBrowserDownload(data, fileName) {
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 };
