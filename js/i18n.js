@@ -161,6 +161,19 @@ const translations = {
       close: 'Close',
       loading: 'Loading...',
       error: 'Error loading text'
+    },
+    privacy: {
+      title: 'Privacy Policy',
+      lastUpdated: 'Last updated: December 2025',
+      storageTitle: 'Data Storage',
+      storageText: 'This application is designed with an "Offline First" philosophy. All your memorization data, settings, and progress are stored exclusively on your device using LocalStorage/IndexedDB technologies.',
+      collectionTitle: 'Data Collection',
+      collectionText: 'We do not collect, transmit, or store any of your personal data on external servers. No analytics or tracking cookies are used within this application.',
+      internetTitle: 'Internet Usage',
+      internetText: 'Internet connection is only used for:',
+      internetItem1: 'Initial download of Quran metadata/text',
+      internetItem2: 'Playing Quran audio recitations',
+      internetItem3: 'Updating the application'
     }
   },
   ar: {
@@ -323,6 +336,19 @@ const translations = {
       close: 'إغلاق',
       loading: 'جاري التحميل...',
       error: 'خطأ في تحميل النص'
+    },
+    privacy: {
+      title: 'سياسة الخصوصية',
+      lastUpdated: 'آخر تحديث: ديسمبر 2025',
+      storageTitle: 'تخزين البيانات',
+      storageText: 'تم تصميم هذا التطبيق بفلسفة "أوفلاين أولاً". يتم تخزين جميع بيانات الحفظ والإعدادات والتقدم حصرياً على جهازك باستخدام تقنيات LocalStorage/IndexedDB.',
+      collectionTitle: 'جمع البيانات',
+      collectionText: 'نحن لا نجمع أو ننقل أو نخزن أي من بياناتك الشخصية على خوادم خارجية. لا يتم استخدام أي ملفات تعريف ارتباط للتحليل أو التتبع داخل هذا التطبيق.',
+      internetTitle: 'استخدام الإنترنت',
+      internetText: 'يتم استخدام اتصال الإنترنت فقط من أجل:',
+      internetItem1: 'التنزيل الأولي لبيانات القرآن الكريم',
+      internetItem2: 'تشغيل التلاوات الصوتية للقرآن',
+      internetItem3: 'تحديث التطبيق'
     }
   }
 };

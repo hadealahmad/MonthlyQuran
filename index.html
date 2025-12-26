@@ -302,7 +302,7 @@
 
                             <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
                                 <button type="button" id="settings-privacy-btn" class="btn btn-outline btn-full"
-                                    style="margin-bottom: 0.75rem;">Privacy Policy</button>
+                                    style="margin-bottom: 0.75rem;" data-i18n="privacy.title">Privacy Policy</button>
                                 <button type="button" id="settings-export-btn" class="btn btn-outline btn-full"
                                     data-i18n="settings.exportData">Export Data</button>
                                 <button type="button" id="settings-import-btn" class="btn btn-outline btn-full"
@@ -372,12 +372,12 @@
         <div id="privacy-view" class="view hidden">
             <header class="header">
                 <div class="header-content">
-                    <button id="privacy-back-btn" class="btn-icon">
+                    <button id="privacy-back-btn" class="btn-icon" data-i18n-aria="settings.back">
                         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 12H5M12 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <h1 class="header-title">Privacy Policy</h1>
+                    <h1 class="header-title" data-i18n="privacy.title">Privacy Policy</h1>
                     <div style="width: 40px;"></div> <!-- Spacer -->
                 </div>
             </header>
@@ -385,13 +385,13 @@
             <main class="main">
                 <div class="container">
                     <div class="card">
-                        <div class="credits-content" style="text-align: left;">
-                            <h2 class="credits-name">Privacy Policy</h2>
-                            <p class="credits-role">Last updated: December 2025</p>
+                        <div class="credits-content">
+                            <h2 class="credits-name" data-i18n="privacy.title">Privacy Policy</h2>
+                            <p class="credits-role" data-i18n="privacy.lastUpdated">Last updated: December 2025</p>
 
                             <div class="credits-section">
-                                <h3>Data Storage</h3>
-                                <p class="credits-text">
+                                <h3 data-i18n="privacy.storageTitle">Data Storage</h3>
+                                <p class="credits-text" data-i18n="privacy.storageText">
                                     This application is designed with an "Offline First" philosophy.
                                     All your memorization data, settings, and progress are stored exclusively
                                     on your device using LocalStorage/IndexedDB technologies.
@@ -399,21 +399,23 @@
                             </div>
 
                             <div class="credits-section">
-                                <h3>Data Collection</h3>
-                                <p class="credits-text">
+                                <h3 data-i18n="privacy.collectionTitle">Data Collection</h3>
+                                <p class="credits-text" data-i18n="privacy.collectionText">
                                     We do not collect, transmit, or store any of your personal data on external servers.
                                     No analytics or tracking cookies are used within this application.
                                 </p>
                             </div>
 
                             <div class="credits-section">
-                                <h3>Internet Usage</h3>
-                                <p class="credits-text">
+                                <h3 data-i18n="privacy.internetTitle">Internet Usage</h3>
+                                <p class="credits-text" data-i18n="privacy.internetText">
                                     Internet connection is only used for:
-                                    <br>• Initial download of Quran metadata/text
-                                    <br>• Playing Quran audio recitations
-                                    <br>• Updating the application
                                 </p>
+                                <ul class="credits-text" style="list-style-type: disc; margin-inline-start: 1.5rem;">
+                                    <li data-i18n="privacy.internetItem1">Initial download of Quran metadata/text</li>
+                                    <li data-i18n="privacy.internetItem2">Playing Quran audio recitations</li>
+                                    <li data-i18n="privacy.internetItem3">Updating the application</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
