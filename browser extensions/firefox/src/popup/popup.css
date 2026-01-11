@@ -1,0 +1,193 @@
+/**
+ * Extension Popup Constraints
+ * 
+ * These styles adapt the PWA layout for browser extension popup windows.
+ * Maximum width for Chrome popups is ~800px, we use 420px for a compact look.
+ */
+
+html,
+body {
+    width: 380px;
+    height: 600px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Fixed navigation for popup */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: var(--bg);
+    /* Use solid background from theme */
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+    /* Add subtle shadow for depth */
+}
+
+/* Scrollable main content */
+.main {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 80px;
+    /* Increased padding to prevent overlap by bottom nav */
+    /* Space for fixed nav */
+}
+
+/* Header adjustments */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: var(--bg);
+    /* Use solid background from theme */
+}
+
+/* View container */
+.view {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.view.hidden {
+    display: none !important;
+}
+
+/* Container width adjustments */
+.container {
+    max-width: 100%;
+    padding: 0.75rem;
+}
+
+/* Card adjustments for smaller popup */
+.card {
+    padding: 1rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+}
+
+/* Form group spacing */
+.form-group {
+    margin-bottom: 0.75rem;
+}
+
+/* Ensure dialogs stay within popup */
+.dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+}
+
+.dialog {
+    max-width: 310px;
+    max-height: 85vh;
+    overflow-y: auto;
+    margin: 0.5rem;
+}
+
+/* Calendar adjustments */
+.calendar-header {
+    padding: 0.5rem 0;
+}
+
+.calendar-grid {
+    font-size: 0.85rem;
+}
+
+/* Progress timeline adjustments */
+.progress-timeline {
+    width: 100%;
+}
+
+/* Today view adjustments */
+.today-stats {
+    padding: 0.5rem 0;
+}
+
+.today-tasks {
+    width: 100%;
+}
+
+/* Setup view adjustments */
+#setup-view .main {
+    padding-bottom: 1rem;
+}
+
+#setup-view .card {
+    width: 100%;
+}
+
+/* Toggle options - smaller in popup */
+.toggle-options {
+    gap: 0.25rem;
+}
+
+.toggle-option {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Compact number input group */
+.number-input-group {
+    gap: 0.25rem;
+}
+
+/* Settings buttons spacing */
+#settings-view .btn {
+    padding: 0.625rem 1rem;
+}
+
+/* Credits view adjustments */
+.credits-content {
+    padding: 0.5rem;
+}
+
+.credits-section {
+    margin-top: 1rem;
+}
+
+/* Nav adjustments */
+.nav-tab {
+    padding: 0.5rem 0.25rem;
+}
+
+.nav-label {
+    font-size: 0.65rem;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+}
+
+/* Scrollbar styling for webkit browsers */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}

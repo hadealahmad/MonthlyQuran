@@ -11,6 +11,7 @@ This guide is for developers who want to understand, modify, or contribute to th
 - [Coding Conventions](#coding-conventions)
 - [Adding New Features](#adding-new-features)
 - [Testing](#testing)
+- [Multi-Platform Support](#multi-platform-support)
 - [Contributing](#contributing)
 
 ## Development Setup
@@ -98,6 +99,15 @@ Recommended tools for development:
 - Use memoization for expensive calculations
 - Batch DOM updates using DocumentFragment
 - Cache frequently accessed DOM elements
+
+## Multi-Platform Support
+
+This project follows a "Single Core, Multiple Wrappers" architecture. The code you edit in `js/` and `css/` powers:
+*   The PWA (Web)
+*   Chrome & Firefox Extensions
+*   Android Mobile App
+
+**Important**: After making changes to the core files, you MUST synchronize them to the platform-specific directories. See [Synchronization Process](SYNC_PROCESS.md) for the specific commands and details.
 
 ## Code Structure
 

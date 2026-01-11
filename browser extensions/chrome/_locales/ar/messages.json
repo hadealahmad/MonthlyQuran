@@ -1,0 +1,10 @@
+{
+    "extensionName": {
+        "message": "القرآن الشهري - متتبع الحفظ",
+        "description": "Name of the extension in Arabic"
+    },
+    "extensionDescription": {
+        "message": "تتبع حفظ القرآن الكريم باستخدام نظام التكرار المتباعد ذو السبع محطات. يدعم العربية والإنجليزية مع إمكانية العمل بدون إنترنت. جميع البيانات تُخزن محلياً - لا يتم جمع أي بيانات.",
+        "description": "Description of the extension in Arabic"
+    }
+}

@@ -8,6 +8,8 @@
   },
   "scripts": {
     "build": "rm -rf www && mkdir -p www && cp index.html manifest.json sw.js www/ && cp -r css js favicon www/",
+    "build:extensions": "node scripts/build-extensions.js",
+    "build:all": "npm run build && npm run build:extensions",
     "open:android": "CAPACITOR_ANDROID_STUDIO_PATH=/opt/android-studio/bin/studio.sh npx cap open android",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

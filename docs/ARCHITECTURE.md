@@ -413,7 +413,57 @@ app.js
     └── calendar.js
 ```
 
-## Date Handling
+## Multi-Platform Architecture
+
+The application is designed as a **Universal Web App**, where a single core codebase powers multiple distribution platforms:
+
+1.  **PWA (Web)**: The root directory serves as a Progressive Web Application.
+2.  **Browser Extensions**: Located in `browser extensions/`, with specific subdirectories for `chrome/` and `firefox/`.
+3.  **Android**: Located in `android/`, utilizing Capacitor/WebView to wrap the web assets.
+
+### Platform Separation
+
+*   **Core (`/js`, `/css`, `/assets`)**: Contains 100% of the application logic, styling, and static assets. This is the "source of truth".
+*   **Platform Wrappers**:
+    *   `browser extensions/*/src/popup/`: Contains the entry points (`popup.html`, `popup.css`) that adapt the core app for the extension's narrow popup context.
+    *   `android/app/src/main/assets/public/`: The destination for core assets when building the mobile app.
+
+### Synchronization Strategy
+
+The project uses a **Synchronized Build Process**. Since the application uses vanilla JavaScript and CSS (no build step like Webpack/Vite), updates to the core are manually or automatically propagated to platform directories using shell commands:
+
+```bash
+# Example Synchronization Command
+cp -r js/* "browser extensions/firefox/js/" && \
+cp -r js/* "browser extensions/chrome/js/" && \
+cp -r css/* "browser extensions/firefox/css/" && \
+cp -r css/* "browser extensions/chrome/css/" && \
+cp -r assets/* "browser extensions/firefox/assets/" && \
+cp -r assets/* "browser extensions/chrome/assets/"
+```
+
+### Browser Extension Considerations
+
+#### 1. Content Security Policy (CSP)
+Extensions have strict CSP rules. To comply:
+*   **Local Fonts**: External font loading (Google Fonts) is replaced by local assets in `assets/fonts/` and a dedicated `css/fonts.css`.
+*   **Inline Scripts**: No inline scripts are used; all logic is in external `.js` files.
+*   **API Access**: API domains (`api.alquran.cloud`) must be whitelisted in the `manifest.json` permissions.
+
+#### 2. Layout Constraints
+Extension popups are limited by the browser (usually 800x600px max). The `popup.css` in each extension folder overrides core container styles to:
+*   Set fixed window dimensions (e.g., 380x600px).
+*   Optimize scroll behavior for small viewports.
+*   Ensure UI components (like Modals) scale correctly within the narrow window.
+
+#### 3. Global Scope Compatibility
+In extension environments, scripts might be evaluated in isolated contexts. To ensure reliable access across modules, core constants and components are explicitly attached to the `window` object:
+```javascript
+window.UIComponents = UIComponents;
+window.PRIORITY = PRIORITY;
+```
+
+## Date and Time Strategy
 
 ### Local Time Strategy
 
