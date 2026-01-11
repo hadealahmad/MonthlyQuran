@@ -113,7 +113,7 @@ const UIComponents = {
       const svgIcon = isCompleted ? SVGUtils.createCheckboxChecked() : SVGUtils.createCheckboxUnchecked();
       checkbox.appendChild(svgIcon);
     } else {
-      checkbox.innerHTML = isCompleted ? '✓' : '';
+      checkbox.textContent = isCompleted ? '✓' : '';
     }
 
     // Use arrow function to preserve context
@@ -365,9 +365,15 @@ const UIComponents = {
     checkbox.className = `checkbox ${isCompleted ? 'checked' : ''}`;
     const ariaLabel = isCompleted ? i18n.t('aria.markIncomplete') : i18n.t('aria.markComplete');
     checkbox.setAttribute('aria-label', ariaLabel);
-    checkbox.innerHTML = isCompleted
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>';
+    if (typeof SVGUtils !== 'undefined') {
+      if (isCompleted) {
+        checkbox.appendChild(SVGUtils.createCheckboxChecked());
+      } else {
+        checkbox.appendChild(SVGUtils.createCheckboxUnchecked());
+      }
+    } else {
+      checkbox.textContent = isCompleted ? '✓' : '';
+    }
 
     checkbox.addEventListener('click', async (e) => {
       // Determine current completion status for animation
@@ -479,7 +485,7 @@ const UIComponents = {
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'btn-icon';
-    closeBtn.innerHTML = '✕';
+    closeBtn.appendChild(SVGUtils.createCloseIcon());
     closeBtn.style.cssText = 'width: 2rem; height: 2rem; font-size: 1.25rem;';
     closeBtn.onclick = () => overlay.remove();
     header.appendChild(closeBtn);
@@ -523,7 +529,7 @@ const UIComponents = {
       }
 
       if (textData && textData.data && textData.data.ayahs) {
-        content.innerHTML = '';
+        content.replaceChildren();
 
         // Group by surah for better display
         let currentSurah = null;

@@ -13,7 +13,7 @@ const SVGUtils = {
     svg.setAttribute('fill', 'none');
     svg.setAttribute('stroke', 'currentColor');
     svg.setAttribute('stroke-width', '2');
-    
+
     children.forEach(child => {
       const element = document.createElementNS('http://www.w3.org/2000/svg', child.tag);
       Object.keys(child.attrs || {}).forEach(attr => {
@@ -21,10 +21,10 @@ const SVGUtils = {
       });
       svg.appendChild(element);
     });
-    
+
     return svg;
   },
-  
+
   /**
    * Create checkbox unchecked icon
    * @returns {SVGElement} SVG element
@@ -37,7 +37,7 @@ const SVGUtils = {
       }
     ]);
   },
-  
+
   /**
    * Create checkbox checked icon
    * @returns {SVGElement} SVG element
@@ -50,7 +50,7 @@ const SVGUtils = {
       }
     ]);
   },
-  
+
   /**
    * Create sun icon
    * @returns {SVGElement} SVG element
@@ -68,7 +68,7 @@ const SVGUtils = {
       { tag: 'line', attrs: { x1: '18.36', y1: '5.64', x2: '19.78', y2: '4.22' } }
     ]);
   },
-  
+
   /**
    * Create moon icon
    * @returns {SVGElement} SVG element
@@ -81,7 +81,7 @@ const SVGUtils = {
       }
     ]);
   },
-  
+
   /**
    * Create minus icon (horizontal line)
    * @returns {SVGElement} SVG element
@@ -91,7 +91,7 @@ const SVGUtils = {
       { tag: 'line', attrs: { x1: '5', y1: '12', x2: '19', y2: '12' } }
     ]);
   },
-  
+
   /**
    * Create plus icon
    * @returns {SVGElement} SVG element
@@ -102,7 +102,7 @@ const SVGUtils = {
       { tag: 'line', attrs: { x1: '5', y1: '12', x2: '19', y2: '12' } }
     ]);
   },
-  
+
   /**
    * Create book/read icon
    * @returns {SVGElement} SVG element
@@ -111,6 +111,28 @@ const SVGUtils = {
     return this.createSVG('0 0 24 24', [
       { tag: 'path', attrs: { d: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20' } },
       { tag: 'path', attrs: { d: 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z' } }
+    ]);
+  },
+
+  /**
+   * Create edit icon
+   * @returns {SVGElement} SVG element
+   */
+  createEditIcon() {
+    return this.createSVG('0 0 24 24', [
+      { tag: 'path', attrs: { d: 'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7' } },
+      { tag: 'path', attrs: { d: 'M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z' } }
+    ]);
+  },
+
+  /**
+   * Create close icon
+   * @returns {SVGElement} SVG element
+   */
+  createCloseIcon() {
+    return this.createSVG('0 0 24 24', [
+      { tag: 'line', attrs: { x1: '18', y1: '6', x2: '6', y2: '18' } },
+      { tag: 'line', attrs: { x1: '6', y1: '6', x2: '18', y2: '18' } }
     ]);
   }
 };

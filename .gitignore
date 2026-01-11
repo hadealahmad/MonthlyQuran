@@ -7,7 +7,7 @@ pnpm-debug.log
 # Build folder
 dist/
 www/
-
+browser extensions/build/
 # OS specific checks
 .DS_Store
 .DS_Store?

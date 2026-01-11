@@ -235,7 +235,7 @@ const Calendar = {
     }
 
     // Batch update DOM
-    grid.innerHTML = '';
+    grid.replaceChildren();
     grid.appendChild(fragment);
   },
 

@@ -12,6 +12,7 @@ This guide is for developers who want to understand, modify, or contribute to th
 - [Adding New Features](#adding-new-features)
 - [Testing](#testing)
 - [Multi-Platform Support](#multi-platform-support)
+- [Build and Distribution](#build-and-distribution)
 - [Contributing](#contributing)
 
 ## Development Setup
@@ -107,7 +108,35 @@ This project follows a "Single Core, Multiple Wrappers" architecture. The code y
 *   Chrome & Firefox Extensions
 *   Android Mobile App
 
-**Important**: After making changes to the core files, you MUST synchronize them to the platform-specific directories. See [Synchronization Process](SYNC_PROCESS.md) for the specific commands and details.
+**Important**: After making changes to the core files, you MUST synchronize them to the platform-specific directories before building. See [Synchronization Process](SYNC_PROCESS.md) for details.
+
+## Build and Distribution
+
+The project includes several `npm` scripts to automate the build process for different platforms:
+
+### 1. Build PWA (Web)
+Constructs a production-ready `www/` directory containing only the necessary PWA files.
+```bash
+npm run build
+```
+
+### 2. Build Browser Extensions
+Synchronizes core files and packages the extensions into `.zip` files for Chrome and Firefox in `browser extensions/build/`.
+```bash
+npm run build:extensions
+```
+
+### 3. Build All Platforms
+Runs both the PWA build and the extension packaging process.
+```bash
+npm run build:all
+```
+
+### 4. Android Build
+Opens the Android project in Android Studio (requires Capacitor and Android Studio to be installed).
+```bash
+npm run open:android
+```
 
 ## Code Structure
 

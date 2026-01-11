@@ -67,7 +67,7 @@ const Theme = {
     if (!icon) return;
 
     // Clear existing content
-    icon.innerHTML = '';
+    icon.replaceChildren();
 
     // Create new icon using SVG utils
     const newIcon = this.currentTheme === 'dark'
