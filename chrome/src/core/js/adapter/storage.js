@@ -1,52 +1,158 @@
 /**
- * Unified Storage Adapter
- * Handles differences between chrome.storage and localStorage
+ * Storage Adapter - Cross-platform storage abstraction
+ * 
+ * Provides a unified async API for storage that works across:
+ * - Browser extensions (uses browser.storage.local)
+ * - PWA/Web (uses localStorage)
+ * - Capacitor Android (uses localStorage)
+ * 
+ * All methods return Promises for consistency across platforms.
  */
-const storage = (() => {
-    const isExtension = typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
-    const api = typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null);
 
-    return {
+const StorageAdapter = (() => {
+    // Detect if running in browser extension context
+    // Check for browser.storage (Firefox native) or chrome.storage (Chrome)
+    const isExtension = (() => {
+        try {
+            // Firefox uses 'browser' namespace natively
+            if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+                return 'browser';
+            }
+            // Chrome uses 'chrome' namespace (but we'll use polyfill in extensions)
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                return 'chrome';
+            }
+            return false;
+        } catch (e) {
+            return false;
+        }
+    })();
+
+    /**
+     * Extension storage implementation (async)
+     * Uses browser.storage.local API
+     */
+    const extensionStorage = {
         async get(key) {
-            if (isExtension) {
+            try {
+                // Use browser namespace (polyfill provides this for Chrome)
+                const api = typeof browser !== 'undefined' ? browser : chrome;
                 const result = await api.storage.local.get(key);
-                return result[key];
-            } else {
-                const value = localStorage.getItem(key);
-                try {
-                    return value ? JSON.parse(value) : null;
-                } catch (e) {
-                    return value;
+                return result[key] !== undefined ? JSON.stringify(result[key]) : null;
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.get error:', error);
                 }
+                return null;
             }
         },
 
         async set(key, value) {
-            if (isExtension) {
-                await api.storage.local.set({ [key]: value });
-            } else {
-                localStorage.setItem(key, JSON.stringify(value));
+            try {
+                const api = typeof browser !== 'undefined' ? browser : chrome;
+                const parsed = value ? JSON.parse(value) : null;
+                await api.storage.local.set({ [key]: parsed });
+                return true;
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.set error:', error);
+                }
+                return false;
             }
         },
 
         async remove(key) {
-            if (isExtension) {
+            try {
+                const api = typeof browser !== 'undefined' ? browser : chrome;
                 await api.storage.local.remove(key);
-            } else {
-                localStorage.removeItem(key);
+                return true;
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.remove error:', error);
+                }
+                return false;
             }
         },
 
         async clear() {
-            if (isExtension) {
+            try {
+                const api = typeof browser !== 'undefined' ? browser : chrome;
                 await api.storage.local.clear();
-            } else {
-                localStorage.clear();
+                return true;
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.clear error:', error);
+                }
+                return false;
             }
         }
     };
+
+    /**
+     * LocalStorage implementation (sync wrapped as async for consistency)
+     * Used for PWA/Web and Capacitor Android
+     */
+    const localStorageWrapper = {
+        async get(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.get error:', error);
+                }
+                return null;
+            }
+        },
+
+        async set(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.set error:', error);
+                }
+                return false;
+            }
+        },
+
+        async remove(key) {
+            try {
+                localStorage.removeItem(key);
+                return true;
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.remove error:', error);
+                }
+                return false;
+            }
+        },
+
+        async clear() {
+            try {
+                localStorage.clear();
+                return true;
+            } catch (error) {
+                if (typeof Logger !== 'undefined') {
+                    Logger.error('StorageAdapter.clear error:', error);
+                }
+                return false;
+            }
+        }
+    };
+
+    // Return the appropriate storage implementation
+    const implementation = isExtension ? extensionStorage : localStorageWrapper;
+
+    // Add a method to check the current platform
+    implementation.getPlatform = () => {
+        if (isExtension === 'browser') return 'firefox-extension';
+        if (isExtension === 'chrome') return 'chrome-extension';
+        return 'web';
+    };
+
+    return implementation;
 })();
 
-window.storage = storage;
-// Keep legacy name for compatibility if needed
-window.StorageAdapter = storage;
+// Expose globally for other modules
+window.StorageAdapter = StorageAdapter;
