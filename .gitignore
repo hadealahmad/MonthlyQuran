@@ -26,4 +26,6 @@ Thumbs.db
 # Capacitor
 # generated icons
 resources/
-
+docs/
+agent/
+build/
