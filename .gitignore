@@ -6,7 +6,6 @@ pnpm-debug.log
 
 # Build folder
 dist/
-www/
 browser extensions/build/
 # OS specific checks
 .DS_Store
@@ -26,4 +25,7 @@ Thumbs.db
 # Capacitor
 # generated icons
 resources/
-
+docs/
+agent/
+build/
+_backup/

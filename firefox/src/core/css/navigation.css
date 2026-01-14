@@ -1,0 +1,107 @@
+/* Bottom Navigation Bar */
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  padding: 0.5rem 0;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted-fg);
+  transition: all 0.2s ease;
+  min-width: 64px;
+  flex: 1;
+  position: relative;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.nav-tab:hover {
+  color: var(--fg);
+  background-color: var(--accent-bg);
+}
+
+.nav-tab.active {
+  color: var(--primary-bg);
+}
+
+.nav-tab.active .nav-icon {
+  transform: scale(1.1);
+}
+
+.nav-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  stroke-width: 2;
+  transition: transform 0.2s ease;
+}
+
+.nav-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+/* Ensure main content has padding for bottom nav */
+.view:not(.hidden) ~ .bottom-nav {
+  display: flex;
+}
+
+/* RTL Support - Keep original order */
+[dir="rtl"] .bottom-nav {
+  direction: ltr;
+}
+
+/* Hide bottom nav on setup view */
+#setup-view:not(.hidden) ~ .bottom-nav {
+  display: none;
+}
+
+/* Install Prompt Banner */
+.install-prompt-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  padding: 1rem;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 100%;
+  margin-bottom: env(safe-area-inset-bottom, 0);
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+}
+
+.install-prompt-banner .btn {
+  white-space: nowrap;
+}
+
+/* RTL Support */
+[dir="rtl"] .install-prompt-banner {
+  direction: rtl;
+}
+
