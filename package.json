@@ -12,6 +12,8 @@
     "build:extensions": "node scripts/build-extensions.js",
     "android:run": "npm run sync && ANDROID_HOME=/home/hadi/Android/Sdk npx cap run android",
     "android:build": "cd android && ./gradlew assembleDebug",
+    "android:build:release": "cd android && ./gradlew bundleRelease",
+    "sign:android": "bash scripts/sign-release-bundle.sh",
     "open:android": "CAPACITOR_ANDROID_STUDIO_PATH=/opt/android-studio/bin/studio.sh npx cap open android",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
