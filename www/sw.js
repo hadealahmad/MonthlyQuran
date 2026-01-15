@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wird-reminder-v1.1.1';
+const CACHE_NAME = 'wird-reminder-v1.5.0';
 './',
   './index.html',
   './core/css/fonts.css',

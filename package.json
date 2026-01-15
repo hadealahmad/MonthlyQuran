@@ -1,6 +1,6 @@
 {
   "name": "monthlyquran",
-  "version": "1.1.1",
+  "version": "1.5.0",
   "description": "A simple web application for tracking Quran memorization using a spaced repetition system. The app helps you follow a 7-station review schedule based on memory retention principles.",
   "main": "sw.js",
   "directories": {
@@ -14,6 +14,7 @@
     "android:build": "cd android && ./gradlew assembleDebug",
     "android:build:release": "cd android && ./gradlew bundleRelease",
     "sign:android": "bash scripts/sign-release-bundle.sh",
+    "build:apk:signed": "bash scripts/build-and-sign-apk.sh",
     "open:android": "CAPACITOR_ANDROID_STUDIO_PATH=/opt/android-studio/bin/studio.sh npx cap open android",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
