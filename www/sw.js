@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wird-reminder-v1.5.2';
+const CACHE_NAME = 'monthlyquran-v1.5.2';
 const urlsToCache = [
   './',
   './index.html',

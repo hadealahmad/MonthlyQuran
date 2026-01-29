@@ -70,7 +70,7 @@ const swPath = path.resolve(__dirname, '../www/sw.js');
 if (fs.existsSync(swPath)) {
     let swContent = fs.readFileSync(swPath, 'utf8');
     // Replace CACHE_NAME = '...';
-    swContent = swContent.replace(/const CACHE_NAME = '[^']+';/, `const CACHE_NAME = 'wird-reminder-v${version}';`);
+    swContent = swContent.replace(/const CACHE_NAME = '[^']+';/, `const CACHE_NAME = 'monthlyquran-v${version}';`);
     fs.writeFileSync(swPath, swContent);
     console.log(`Updated CACHE_NAME in www/sw.js`);
 }

@@ -3,7 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 console.log('╔════════════════════════════════════════╗');
-console.log('║        Wird Reminder Build System      ║');
+console.log('║        Monthly Quran Build System      ║');
 console.log('╚════════════════════════════════════════╝');
 
 // 1. Version Sync
