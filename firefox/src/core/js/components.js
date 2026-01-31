@@ -174,7 +174,7 @@ const UIComponents = {
         readIconBtn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          UIComponents.showReadingModal(pageNumber, 'page');
+          UIComponents.showReadingModal(item.id, station, currentDate, pageNumber, 'page');
         });
 
         // Add book icon
@@ -431,7 +431,7 @@ const UIComponents = {
   },
 
   // Show reading modal
-  async showReadingModal(unitNumber, unitType = 'page') {
+  async showReadingModal(itemId, stationNumber, date, unitNumber, unitType = 'page') {
     // Create modal overlay
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
@@ -509,6 +509,43 @@ const UIComponents = {
     // Add loading state
     content.textContent = i18n.t('reading.loading');
     modal.appendChild(content);
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.style.cssText = `
+      padding: 1rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+
+    // Completion toggle button
+    const isCompleted = await Storage.isReviewCompleted(itemId, stationNumber, date);
+    const toggleCompletionBtn = document.createElement('button');
+    toggleCompletionBtn.className = `btn ${isCompleted ? 'btn-success' : 'btn-outline-success'}`;
+    toggleCompletionBtn.style.cssText = 'width: 100%;';
+    toggleCompletionBtn.textContent = i18n.t('reading.markAsRead');
+
+    toggleCompletionBtn.addEventListener('click', async () => {
+      const isCompleted = await Storage.isReviewCompleted(itemId, stationNumber, date);
+
+      if (isCompleted) {
+        await Storage.unmarkReviewComplete(itemId, stationNumber, date);
+      } else {
+        await Storage.markReviewComplete(itemId, stationNumber, date);
+      }
+
+      toggleCompletionBtn.className = `btn ${!isCompleted ? 'btn-success' : 'btn-outline-success'}`;
+
+      if (window.UI?.renderTodayView) {
+        const uiDate = window.UI.currentDate || new Date();
+        await window.UI.renderTodayView(uiDate);
+      }
+    });
+
+    footer.appendChild(toggleCompletionBtn);
+
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
@@ -575,6 +612,8 @@ const UIComponents = {
           ayahSpan.appendChild(badge);
           content.appendChild(ayahSpan);
         });
+
+        modal.appendChild(footer);
       } else {
         content.textContent = i18n.t('reading.error');
       }
