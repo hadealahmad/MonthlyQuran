@@ -1,5 +1,25 @@
 # Monthly Quran
 
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.monthlyquran.app">
+    <img src="https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white" alt="Get it on Google Play" height="50">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://chromewebstore.google.com/detail/djhcclihfkoijibblmhgfoomibieokma?utm_source=item-share-cb">
+    <img src="https://img.shields.io/badge/Chrome_Web_Store-4285F4?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Available on Chrome Web Store" height="50">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/monthly-quran-%D8%A7%D9%84%D9%82%D8%B1%D8%A2%D9%86-%D8%A7%D9%84%D8%B4%D9%87%D8%B1%D9%8A/">
+    <img src="https://img.shields.io/badge/Firefox_Add--ons-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white" alt="Get the Firefox Add-on" height="50">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://hadealahmad.github.io/MonthlyQuran/">
+    <img src="https://img.shields.io/badge/Web_App-0078D4?style=for-the-badge&logo=pwa&logoColor=white" alt="Open Web App" height="50">
+  </a>
+</p>
+
+---
+
 A simple, cross-platform application for tracking Quran memorization using a spaced repetition system. The app helps you follow a 7-station review schedule based on memory retention principles.
 
 It is available as:
