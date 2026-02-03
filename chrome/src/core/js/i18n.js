@@ -179,7 +179,8 @@ const translations = {
       title: 'Quran Text',
       close: 'Close',
       loading: 'Loading...',
-      error: 'Error loading text'
+      error: 'Error loading text',
+      markAsRead: 'Mark as Read',
     },
     privacy: {
       title: 'Privacy Policy',
@@ -378,7 +379,8 @@ const translations = {
       title: 'نص القرآن',
       close: 'إغلاق',
       loading: 'جاري التحميل...',
-      error: 'خطأ في تحميل النص'
+      error: 'خطأ في تحميل النص',
+      markAsRead: 'تم القراءة',
     },
     privacy: {
       title: 'سياسة الخصوصية',

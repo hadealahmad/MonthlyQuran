@@ -76,6 +76,21 @@
   transform: scale(0.98);
 }
 
+.btn-outline-success {
+  border: 1px solid var(--success-bg);
+  background-color: transparent;
+  color: var(--success-bg);
+}
+
+.btn-outline-success:hover {
+  background-color: var(--success-bg);
+  color: var(--success-fg);
+}
+
+.btn-outline-success:active {
+  transform: scale(0.98);
+}
+
 .btn-ghost {
   background-color: transparent;
   color: var(--fg);
@@ -576,6 +591,28 @@
 }
 
 .btn-destructive:focus-visible {
+  outline: 2px solid var(--ring-color);
+  outline-offset: 2px;
+}
+
+.btn-success {
+  background-color: var(--success-bg);
+  color: var(--success-fg);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid transparent;
+}
+
+.btn-success:hover {
+  background-color: var(--success-bg);
+  opacity: 0.9;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.btn-success:active {
+  transform: scale(0.98);
+}
+
+.btn-success:focus-visible {
   outline: 2px solid var(--ring-color);
   outline-offset: 2px;
 }
