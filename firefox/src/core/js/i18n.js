@@ -22,7 +22,15 @@ const translations = {
       language: 'Language',
       startButton: 'Start Memorization',
       surahPreset: 'Big Surahs Preset (Optional)',
-      surahPresetNone: 'None'
+      surahPresetNone: 'None',
+      customUnitSize: 'Unit Size (pages)',
+      customUnitSizeDescription: 'How many pages per unit?',
+      unitSizeCustom: 'Custom',
+      unitSizeCustomValueLabel: 'Pages',
+      unitSizeCustomPlaceholder: 'e.g. 4',
+      unitsPerStep: 'Units per Step',
+      unitsPerStepDescription: 'Each task covers this many units',
+      totalUnitsDescription: 'Total number of units in this progression'
     },
     dashboard: {
       newMemorization: 'New Memorization',
@@ -222,7 +230,15 @@ const translations = {
       language: 'اللغة',
       startButton: 'بدء الحفظ',
       surahPreset: 'السور الكبيرة (اختياري)',
-      surahPresetNone: 'لا شيء'
+      surahPresetNone: 'لا شيء',
+      customUnitSize: 'حجم الوحدة (صفحات)',
+      customUnitSizeDescription: 'كم صفحة في كل وحدة؟',
+      unitSizeCustom: 'آخر',
+      unitSizeCustomValueLabel: 'صفحات',
+      unitSizeCustomPlaceholder: 'مثال 4',
+      unitsPerStep: 'الوحدات لكل خطوة',
+      unitsPerStepDescription: 'كل مهمة تغطي هذا العدد من الوحدات',
+      totalUnitsDescription: 'إجمالي عدد الوحدات في هذا التقدم'
     },
     dashboard: {
       newMemorization: 'الحفظ الجديد',

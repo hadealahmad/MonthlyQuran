@@ -94,7 +94,8 @@ const Algorithm = {
 
     const unitType = config.unit_type || DEFAULT_CONFIG.UNIT_TYPE;
     const itemNumber = daysSinceStart + 1;
-    const contentRef = this.formatContentReference(unitType, itemNumber);
+    const actualUnitNumber = this.calculateActualUnitNumber(unitType, itemNumber, config);
+    const contentRef = this.formatContentReference(unitType, actualUnitNumber, config);
 
     // Use for...of loop instead of find for better control
     let existingItem = null;
@@ -258,7 +259,12 @@ const Algorithm = {
 
     // Pre-calculate content reference for new item check
     const newItemContentRef = daysSinceStart >= 0 && daysSinceStart < totalUnits
-      ? this.formatContentReference(config.unit_type || DEFAULT_CONFIG.UNIT_TYPE, daysSinceStart + 1)
+      ? (() => {
+          const unitType = config.unit_type || DEFAULT_CONFIG.UNIT_TYPE;
+          const itemNumber = daysSinceStart + 1;
+          const actualUnitNumber = this.calculateActualUnitNumber(unitType, itemNumber, config);
+          return this.formatContentReference(unitType, actualUnitNumber, config);
+        })()
       : null;
 
     // Single loop through items
@@ -486,27 +492,79 @@ const Algorithm = {
     return schedule;
   },
 
+  // Calculate actual unit number from item number (handles fractional pages)
+  calculateActualUnitNumber(unitType, itemNumber, config) {
+    if (unitType === 'page' && config) {
+      const startPage = config.start_page || 1;
+      const unitSize = config.unit_size || 1;
+      return startPage + (itemNumber - 1) * unitSize;
+    }
+    return itemNumber;
+  },
+
+  // Format a page range label (e.g. "Page 1–4½") when unit covers multiple pages
+  formatPageRangeLabel(unitType, startPage, endPage) {
+    const formatNumber = (num) => {
+      if (num % 1 === 0) return num.toString();
+      const fraction = num % 1;
+      const whole = Math.floor(num);
+      if (fraction === 0.5) return `${whole}½`;
+      if (fraction === 0.25) return `${whole}¼`;
+      if (fraction === 0.75) return `${whole}¾`;
+      return num.toFixed(1);
+    };
+    const startStr = formatNumber(startPage);
+    const endStr = formatNumber(endPage);
+    if (typeof i18n !== 'undefined') {
+      const unitName = i18n.t(`units.${unitType}`);
+      return `${unitName} ${startStr}–${endStr}`;
+    }
+    return `Page ${startStr}–${endStr}`;
+  },
+
   // Format content reference based on unit type
-  formatContentReference(unitType, number) {
+  formatContentReference(unitType, number, config = null) {
+    // Format fractional numbers nicely (e.g., 3.5 -> "3½", 1.5 -> "1½")
+    const formatNumber = (num) => {
+      if (num % 1 === 0) {
+        return num.toString();
+      }
+      // Handle common fractions
+      const fraction = num % 1;
+      const whole = Math.floor(num);
+      if (fraction === 0.5) {
+        return `${whole}½`;
+      } else if (fraction === 0.25) {
+        return `${whole}¼`;
+      } else if (fraction === 0.75) {
+        return `${whole}¾`;
+      } else {
+        // For other fractions, show decimal with max 1 decimal place
+        return num.toFixed(1);
+      }
+    };
+
+    const formattedNumber = formatNumber(number);
+
     // Use i18n if available, otherwise fallback to English
     if (typeof i18n !== 'undefined') {
       const unitName = i18n.t(`units.${unitType}`);
-      return `${unitName} ${number}`;
+      return `${unitName} ${formattedNumber}`;
     }
     // Fallback to English
     switch (unitType) {
       case 'page':
-        return `Page ${number}`;
+        return `Page ${formattedNumber}`;
       case 'verse':
-        return `Ayah ${number}`;
+        return `Ayah ${formattedNumber}`;
       case 'quarter_hizb':
-        return `Quarter ${number}`;
+        return `Quarter ${formattedNumber}`;
       case 'hizb':
-        return `Hizb ${number}`;
+        return `Hizb ${formattedNumber}`;
       case 'juz':
-        return `Juz ${number}`;
+        return `Juz ${formattedNumber}`;
       default:
-        return `Unit ${number}`;
+        return `Unit ${formattedNumber}`;
     }
   },
 
@@ -571,7 +629,9 @@ const Algorithm = {
 
       // 1 unit per day, so itemNumber = day + 1
       const itemNumber = day + 1;
-      const contentRef = this.formatContentReference(config.unit_type || DEFAULT_CONFIG.UNIT_TYPE, itemNumber);
+      const unitType = config.unit_type || DEFAULT_CONFIG.UNIT_TYPE;
+      const actualUnitNumber = this.calculateActualUnitNumber(unitType, itemNumber, config);
+      const contentRef = this.formatContentReference(unitType, actualUnitNumber, config);
       if (!expectedItemsByDate[dateStr]) {
         expectedItemsByDate[dateStr] = [];
       }

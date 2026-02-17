@@ -86,9 +86,33 @@
                                 <input type="number" id="start-page" class="input" min="1" max="604" value="1">
                             </div>
 
+                            <div class="form-group" id="custom-unit-size-group" style="display: none;" role="group" aria-labelledby="unit-size-pages-label">
+                                <label id="unit-size-pages-label" data-i18n="setup.customUnitSize">Unit Size (pages)</label>
+                                <p class="form-hint" style="font-size: 0.875rem; color: var(--muted-fg); margin: 0.25rem 0 0.75rem 0;" data-i18n="setup.customUnitSizeDescription">How many pages per unit?</p>
+                                <div class="setup-toggles">
+                                    <div class="setup-toggle-group">
+                                        <div class="toggle-options unit-size-options" id="unit-size-toggle" role="group" aria-label="Unit Size">
+                                            <button type="button" class="toggle-option" data-value="0.5">0.5</button>
+                                            <button type="button" class="toggle-option" data-value="1">1</button>
+                                            <button type="button" class="toggle-option" data-value="1.5">1.5</button>
+                                            <button type="button" class="toggle-option" data-value="2">2</button>
+                                            <button type="button" class="toggle-option" data-value="2.5">2.5</button>
+                                            <button type="button" class="toggle-option" data-value="3">3</button>
+                                            <button type="button" class="toggle-option" data-value="3.5">3.5</button>
+                                            <button type="button" class="toggle-option" data-value="custom" data-i18n="setup.unitSizeCustom">Custom</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="custom-unit-size-input-wrap" class="form-group unit-size-custom-field" style="display: none;">
+                                    <label for="custom-unit-size" data-i18n="setup.unitSizeCustomValueLabel">Pages</label>
+                                    <input type="number" id="custom-unit-size" class="input" min="0.5" max="10" step="0.5" value="1" placeholder="e.g. 4" data-i18n="setup.unitSizeCustomPlaceholder">
+                                </div>
+                            </div>
+
                             <div class="form-group">
                                 <label for="total-units" id="total-units-label" data-i18n="setup.totalUnits">Total
                                     Units</label>
+                                <p class="form-hint" id="total-units-hint" style="font-size: 0.875rem; color: var(--muted-fg); margin: 0.25rem 0 0.75rem 0;" data-i18n="setup.totalUnitsDescription">Total number of units in this progression</p>
                                 <div class="number-input-group">
                                     <button type="button" class="number-input-btn" id="total-units-decrease"
                                         aria-label="Decrease">

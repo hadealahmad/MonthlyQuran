@@ -287,7 +287,7 @@ const QuranAPI = {
 
   /**
    * Fetch page text for reading
-   * @param {number} pageNumber - Page number (1-604)
+   * @param {number} pageNumber - Page number (1-604) or fractional (e.g., 3.5)
    * @param {string} edition - Edition identifier (default: 'quran-uthmani')
    * @returns {Promise<Object|null>} Page text data or null
    */
@@ -297,8 +297,13 @@ const QuranAPI = {
       return null;
     }
 
+    // Handle fractional pages (e.g., 3.5 = half of page 3 + half of page 4)
+    if (pageNumber % 1 !== 0) {
+      return await this.fetchFractionalPageText(pageNumber, edition);
+    }
+
     try {
-      const response = await fetch(`${this.API_BASE_URL}/page/${pageNumber}/${edition}`);
+      const response = await fetch(`${this.API_BASE_URL}/page/${Math.floor(pageNumber)}/${edition}`);
       if (!response.ok) {
         throw new Error(`API response not ok: ${response.status}`);
       }
@@ -308,6 +313,131 @@ const QuranAPI = {
       Logger.error('Error fetching page text:', error);
       return null;
     }
+  },
+
+  /**
+   * Fetch fractional page text (e.g., page 3.5 = half page 3 + half page 4)
+   * @param {number} fractionalPage - Fractional page number (e.g., 3.5)
+   * @param {string} edition - Edition identifier (default: 'quran-uthmani')
+   * @returns {Promise<Object|null>} Combined page text data or null
+   */
+  async fetchFractionalPageText(fractionalPage, edition = 'quran-uthmani') {
+    const floorPage = Math.floor(fractionalPage);
+    const ceilPage = Math.ceil(fractionalPage);
+    const fraction = fractionalPage - floorPage;
+
+    // If fraction is 0, just return the floor page
+    if (fraction === 0) {
+      return await this.fetchPageText(floorPage, edition);
+    }
+
+    // Fetch both pages
+    const [page1Data, page2Data] = await Promise.all([
+      this.fetchPageText(floorPage, edition),
+      this.fetchPageText(ceilPage, edition)
+    ]);
+
+    if (!page1Data || !page2Data) {
+      Logger.error('Error fetching fractional page text: one or both pages failed');
+      return page1Data || page2Data; // Return whichever succeeded, or null
+    }
+
+    // Combine ayahs: take all from first page, then fraction of second page
+    const combinedAyahs = [];
+    
+    // Add all ayahs from first page
+    if (page1Data.data && page1Data.data.ayahs) {
+      combinedAyahs.push(...page1Data.data.ayahs);
+    }
+
+    // Add fraction of ayahs from second page
+    if (page2Data.data && page2Data.data.ayahs) {
+      const totalAyahs = page2Data.data.ayahs.length;
+      const ayahsToTake = Math.ceil(totalAyahs * fraction);
+      
+      // Take the first portion of ayahs from second page
+      combinedAyahs.push(...page2Data.data.ayahs.slice(0, ayahsToTake));
+    }
+
+    // Return combined data structure
+    return {
+      ...page1Data,
+      data: {
+        ...page1Data.data,
+        ayahs: combinedAyahs
+      }
+    };
+  },
+
+  /**
+   * Fetch a range of pages (for unit_size > 1, e.g. one unit = 3.5 pages)
+   * @param {number} startPage - Start page (1-604), can be fractional (e.g. 4.5 = from middle of page 4)
+   * @param {number} endPage - End page (exclusive end), can be fractional (e.g. 4.5 = up to middle of page 4)
+   * @param {string} edition - Edition identifier (default: 'quran-uthmani')
+   * @returns {Promise<Object|null>} Combined page text data or null
+   */
+  async fetchPageRange(startPage, endPage, edition = 'quran-uthmani') {
+    if (!navigator.onLine) {
+      Logger.warn('Offline: Cannot fetch page range');
+      return null;
+    }
+
+    const combinedAyahs = [];
+    let templateData = null;
+
+    const startFloor = Math.floor(startPage);
+    const startFrac = startPage % 1;
+    const endFloor = Math.floor(endPage);
+    const endFrac = endPage % 1;
+
+    // Partial start: from (startFrac) to end of page startFloor
+    if (startFrac > 0) {
+      const pageData = await this.fetchPageText(startFloor, edition);
+      if (!pageData || !pageData.data || !pageData.data.ayahs) {
+        return null;
+      }
+      templateData = pageData;
+      const ayahs = pageData.data.ayahs;
+      const startIdx = Math.floor(startFrac * ayahs.length);
+      combinedAyahs.push(...ayahs.slice(startIdx));
+    }
+
+    // Full pages: from firstFull to lastFull (inclusive)
+    const firstFullPage = startFrac > 0 ? startFloor + 1 : startFloor;
+    const lastFullPage = endFrac > 0 ? endFloor - 1 : endFloor;
+
+    for (let p = firstFullPage; p <= lastFullPage; p++) {
+      const pageData = await this.fetchPageText(p, edition);
+      if (!pageData || !pageData.data || !pageData.data.ayahs) {
+        return null;
+      }
+      if (!templateData) templateData = pageData;
+      combinedAyahs.push(...pageData.data.ayahs);
+    }
+
+    // Partial end: from start of page endFloor up to (endFrac) of that page
+    if (endFrac > 0) {
+      const pageData = await this.fetchPageText(endFloor, edition);
+      if (!pageData || !pageData.data || !pageData.data.ayahs) {
+        return null;
+      }
+      if (!templateData) templateData = pageData;
+      const ayahs = pageData.data.ayahs;
+      const endIdx = Math.ceil(endFrac * ayahs.length);
+      combinedAyahs.push(...ayahs.slice(0, endIdx));
+    }
+
+    if (!templateData || combinedAyahs.length === 0) {
+      return null;
+    }
+
+    return {
+      ...templateData,
+      data: {
+        ...templateData.data,
+        ayahs: combinedAyahs
+      }
+    };
   },
 
   /**

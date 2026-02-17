@@ -676,6 +676,27 @@
   z-index: 1;
 }
 
+/* Unit size: horizontal scroll on small screens */
+.unit-size-options {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  flex-wrap: nowrap;
+}
+.unit-size-options .toggle-option {
+  flex: 0 1 auto;
+  min-width: 2.5rem;
+}
+
+/* Custom unit size input as sub-control (indent + subtle background) */
+.unit-size-custom-field {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  padding-inline-start: 1.25rem;
+  background-color: var(--muted-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+}
+
 /* RTL Support for toggles */
 [dir="rtl"] .toggle-options {
   flex-direction: row-reverse;

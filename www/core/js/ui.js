@@ -268,12 +268,14 @@ const UI = {
     const progressionNameInput = DOMCache.getElementById('progression-name');
     const startPageInput = DOMCache.getElementById('start-page');
     const startPageGroup = DOMCache.getElementById('start-page-group');
+    const customUnitSizeInput = DOMCache.getElementById('custom-unit-size');
 
     if (config) {
       if (totalUnitsInput) totalUnitsInput.value = config.total_units || DEFAULT_CONFIG.TOTAL_UNITS;
       if (startDateInput) startDateInput.value = config.start_date || '';
       if (progressionNameInput) progressionNameInput.value = config.progression_name || '';
       if (startPageInput) startPageInput.value = config.start_page || 1;
+      if (customUnitSizeInput) customUnitSizeInput.value = config.unit_size || 1;
     } else {
       // Set default start date to today (using local date)
       if (startDateInput && !startDateInput.value) {
@@ -286,6 +288,9 @@ const UI = {
       if (startPageInput && !startPageInput.value) {
         startPageInput.value = 1;
       }
+      if (customUnitSizeInput && !customUnitSizeInput.value) {
+        customUnitSizeInput.value = 1;
+      }
     }
 
     // Update unit count label and start page visibility
@@ -293,6 +298,9 @@ const UI = {
 
     // Initialize toggle event listeners
     this.initSetupToggles();
+
+    // Sync unit-size toggle to current input value (preset vs Custom)
+    this.syncUnitSizeToggleFromInput();
 
     // Initialize number input buttons
     this.initNumberInput();
@@ -375,6 +383,8 @@ const UI = {
     const unitTypeToggle = DOMCache.getElementById('unit-type-toggle');
     const totalUnitsLabel = DOMCache.getElementById('total-units-label');
     const startPageGroup = DOMCache.getElementById('start-page-group');
+    const customUnitSizeGroup = DOMCache.getElementById('custom-unit-size-group');
+    const totalUnitsHint = DOMCache.getElementById('total-units-hint');
 
     if (!unitTypeToggle || !totalUnitsLabel) return;
 
@@ -404,6 +414,12 @@ const UI = {
     totalUnitsLabel.setAttribute('data-i18n', labelKey);
     totalUnitsLabel.textContent = i18n.t(labelKey);
 
+    // Update hint text
+    if (totalUnitsHint) {
+      totalUnitsHint.setAttribute('data-i18n', 'setup.totalUnitsDescription');
+      totalUnitsHint.textContent = i18n.t('setup.totalUnitsDescription');
+    }
+
     const totalUnitsInput = DOMCache.getElementById('total-units');
     if (totalUnitsInput) {
       totalUnitsInput.max = maxUnits;
@@ -412,12 +428,19 @@ const UI = {
       }
     }
 
-    // Show/hide start page field
+    // Show/hide start page field and custom unit size field
     if (startPageGroup) {
       if (selectedUnitType === 'page') {
         startPageGroup.style.display = 'block';
       } else {
         startPageGroup.style.display = 'none';
+      }
+    }
+    if (customUnitSizeGroup) {
+      if (selectedUnitType === 'page') {
+        customUnitSizeGroup.style.display = 'block';
+      } else {
+        customUnitSizeGroup.style.display = 'none';
       }
     }
   },
@@ -516,6 +539,57 @@ const UI = {
         });
       });
     }
+
+    // Unit size toggle (presets 0.5, 1, 1.5, 2, 2.5, 3, 3.5 + Custom)
+    const unitSizeToggle = DOMCache.getElementById('unit-size-toggle');
+    const customUnitSizeInput = DOMCache.getElementById('custom-unit-size');
+    const customUnitSizeInputWrap = DOMCache.getElementById('custom-unit-size-input-wrap');
+    if (unitSizeToggle && customUnitSizeInput) {
+      unitSizeToggle.querySelectorAll('.toggle-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const value = btn.getAttribute('data-value');
+          unitSizeToggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          if (value === 'custom') {
+            if (customUnitSizeInputWrap) customUnitSizeInputWrap.style.display = 'block';
+            customUnitSizeInput.focus();
+          } else {
+            if (customUnitSizeInputWrap) customUnitSizeInputWrap.style.display = 'none';
+            customUnitSizeInput.value = value;
+          }
+        });
+      });
+      if (customUnitSizeInput.addEventListener) {
+        customUnitSizeInput.addEventListener('change', () => {
+          this.syncUnitSizeToggleFromInput();
+        });
+      }
+    }
+  },
+
+  // Sync unit-size toggle UI from the hidden input value (preset active vs Custom + input visible)
+  syncUnitSizeToggleFromInput() {
+    const unitSizeToggle = DOMCache.getElementById('unit-size-toggle');
+    const customUnitSizeInput = DOMCache.getElementById('custom-unit-size');
+    const customUnitSizeInputWrap = DOMCache.getElementById('custom-unit-size-input-wrap');
+    if (!unitSizeToggle || !customUnitSizeInput) return;
+    const value = parseFloat(customUnitSizeInput.value) || 1;
+    const presets = ['0.5', '1', '1.5', '2', '2.5', '3', '3.5'];
+    const valueStr = value.toString();
+    const isPreset = presets.includes(valueStr);
+    unitSizeToggle.querySelectorAll('.toggle-option').forEach(btn => {
+      btn.classList.remove('active');
+      const dataVal = btn.getAttribute('data-value');
+      if (dataVal === 'custom') {
+        if (isPreset) return;
+        btn.classList.add('active');
+      } else if (parseFloat(dataVal) === value || (dataVal === valueStr)) {
+        btn.classList.add('active');
+      }
+    });
+    if (customUnitSizeInputWrap) {
+      customUnitSizeInputWrap.style.display = isPreset ? 'none' : 'block';
+    }
   },
 
   // Generate stable ID for an item based on unit type, number, and date
@@ -540,11 +614,18 @@ const UI = {
   async createOrUpdateItem(unitType, itemNumber, itemDateStr, config, allItems) {
     const stableId = this.generateItemId(unitType, itemNumber, itemDateStr);
     // Calculate actual unit number with start page offset for pages
+    // If unit_size is set, calculate fractional page numbers (e.g., unit_size=0.5 means half pages)
     let actualUnitNumber = itemNumber;
-    if (unitType === 'page' && config && config.start_page) {
-      actualUnitNumber = config.start_page + itemNumber - 1;
+    if (unitType === 'page' && config) {
+      const startPage = config.start_page || 1;
+      const unitSize = config.unit_size || 1;
+      // Calculate: start_page + (itemNumber - 1) * unit_size
+      // Example: start_page=1, unit_size=0.5, itemNumber=1 -> 1 + 0*0.5 = 1
+      //          start_page=1, unit_size=0.5, itemNumber=2 -> 1 + 1*0.5 = 1.5
+      //          start_page=1, unit_size=1.5, itemNumber=2 -> 1 + 1*1.5 = 2.5
+      actualUnitNumber = startPage + (itemNumber - 1) * unitSize;
     }
-    const contentRef = Algorithm.formatContentReference(unitType, actualUnitNumber);
+    const contentRef = Algorithm.formatContentReference(unitType, actualUnitNumber, config);
     const existingItem = this.findExistingItem(allItems, unitType, itemNumber, itemDateStr, stableId);
 
     if (!existingItem) {
@@ -841,7 +922,7 @@ const UI = {
         fragment.appendChild(empty);
       } else {
         uniqueTasks.forEach(({ item, priority, station, isCompleted }) => {
-          const taskCard = UIComponents.createTaskCard(item, station, priority, isCompleted, config.unit_type);
+          const taskCard = UIComponents.createTaskCard(item, station, priority, isCompleted, config.unit_type, config.unit_size, config);
           fragment.appendChild(taskCard);
         });
       }
@@ -1174,6 +1255,11 @@ const UI = {
           ? parseInt(startPageInput.value) || 1
           : 1;
 
+        const customUnitSizeInput = document.getElementById('custom-unit-size');
+        const unitSize = (unitType === 'page' && customUnitSizeInput)
+          ? parseFloat(customUnitSizeInput.value) || 1
+          : null;
+
         const config = {
           unit_type: unitType,
           total_units: parseInt(document.getElementById('total-units').value) || 30,
@@ -1183,7 +1269,8 @@ const UI = {
           theme: theme,
           morning_hour: DEFAULT_CONFIG.MORNING_HOUR,
           evening_hour: DEFAULT_CONFIG.EVENING_HOUR,
-          start_page: startPage
+          start_page: startPage,
+          unit_size: unitSize
         };
 
         await Storage.saveConfig(config);
@@ -1467,10 +1554,12 @@ const UI = {
         var stableId = this.generateItemId(newData.unit_type, itemNumber, itemDateStr);
 
         var actualUnitNumber = itemNumber;
-        if (newData.unit_type === 'page' && newData.start_page) {
-          actualUnitNumber = newData.start_page + itemNumber - 1;
+        if (newData.unit_type === 'page' && newData) {
+          var startPage = newData.start_page || 1;
+          var unitSize = newData.unit_size || 1;
+          actualUnitNumber = startPage + (itemNumber - 1) * unitSize;
         }
-        var contentRef = Algorithm.formatContentReference(newData.unit_type, actualUnitNumber);
+        var contentRef = Algorithm.formatContentReference(newData.unit_type, actualUnitNumber, newData);
 
         var newItem = {
           id: stableId,

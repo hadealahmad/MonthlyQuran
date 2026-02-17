@@ -387,6 +387,31 @@ const Dialog = {
     startPageGroup.appendChild(startPageInput);
     form.appendChild(startPageGroup);
 
+    // Custom unit size (conditional, only for pages)
+    const customUnitSizeGroup = document.createElement('div');
+    customUnitSizeGroup.className = 'form-group';
+    customUnitSizeGroup.id = 'add-memorization-custom-unit-size-group';
+    customUnitSizeGroup.style.display = 'none';
+    const customUnitSizeLabel = document.createElement('label');
+    customUnitSizeLabel.setAttribute('for', 'add-memorization-custom-unit-size');
+    customUnitSizeLabel.textContent = i18n.t('setup.customUnitSize');
+    customUnitSizeGroup.appendChild(customUnitSizeLabel);
+    const customUnitSizeHint = document.createElement('p');
+    customUnitSizeHint.className = 'form-hint';
+    customUnitSizeHint.style.cssText = 'font-size: 0.875rem; color: var(--muted-fg); margin: 0.25rem 0 0.75rem 0;';
+    customUnitSizeHint.textContent = i18n.t('setup.customUnitSizeDescription');
+    customUnitSizeGroup.appendChild(customUnitSizeHint);
+    const customUnitSizeInput = document.createElement('input');
+    customUnitSizeInput.type = 'number';
+    customUnitSizeInput.id = 'add-memorization-custom-unit-size';
+    customUnitSizeInput.className = 'input';
+    customUnitSizeInput.min = '0.5';
+    customUnitSizeInput.max = '10';
+    customUnitSizeInput.step = '0.5';
+    customUnitSizeInput.value = '1';
+    customUnitSizeGroup.appendChild(customUnitSizeInput);
+    form.appendChild(customUnitSizeGroup);
+
     // Total units
     const totalUnitsGroup = document.createElement('div');
     totalUnitsGroup.className = 'form-group';
@@ -431,11 +456,13 @@ const Dialog = {
         }
       }
 
-      // Show/hide start page field
+      // Show/hide start page field and custom unit size field
       if (selectedUnitType === 'page') {
         startPageGroup.style.display = 'block';
+        customUnitSizeGroup.style.display = 'block';
       } else {
         startPageGroup.style.display = 'none';
+        customUnitSizeGroup.style.display = 'none';
       }
     };
 
@@ -577,9 +604,10 @@ const Dialog = {
       const startDate = startDateInput.value;
       const progressionName = progressionNameInput.value || '';
       const startPage = (unitType === 'page') ? parseInt(startPageInput.value) || 1 : 1;
+      const unitSize = (unitType === 'page' && customUnitSizeInput) ? parseFloat(customUnitSizeInput.value) || 1 : null;
 
       overlay.remove();
-      if (onSubmit) onSubmit({ unitType, totalUnits, startDate, progressionName, startPage });
+      if (onSubmit) onSubmit({ unitType, totalUnits, startDate, progressionName, startPage, unit_size: unitSize });
     });
 
     dialog.appendChild(form);
@@ -876,6 +904,27 @@ const Dialog = {
     startPageGroup.appendChild(startPageInput);
     form.appendChild(startPageGroup);
 
+    var customUnitSizeGroup = document.createElement('div');
+    customUnitSizeGroup.className = 'form-group';
+    customUnitSizeGroup.style.display = 'none';
+    var customUnitSizeLabel = document.createElement('label');
+    customUnitSizeLabel.textContent = i18n.t('setup.customUnitSize');
+    customUnitSizeGroup.appendChild(customUnitSizeLabel);
+    var customUnitSizeHint = document.createElement('p');
+    customUnitSizeHint.className = 'form-hint';
+    customUnitSizeHint.style.cssText = 'font-size: 0.875rem; color: var(--muted-fg); margin: 0.25rem 0 0.75rem 0;';
+    customUnitSizeHint.textContent = i18n.t('setup.customUnitSizeDescription');
+    customUnitSizeGroup.appendChild(customUnitSizeHint);
+    var customUnitSizeInput = document.createElement('input');
+    customUnitSizeInput.type = 'number';
+    customUnitSizeInput.className = 'input';
+    customUnitSizeInput.min = '0.5';
+    customUnitSizeInput.max = '10';
+    customUnitSizeInput.step = '0.5';
+    customUnitSizeInput.value = currentConfig.unit_size || 1;
+    customUnitSizeGroup.appendChild(customUnitSizeInput);
+    form.appendChild(customUnitSizeGroup);
+
     var updateFields = function () {
       var activeOpt = unitTypeToggle.querySelector('.active');
       var type = activeOpt ? activeOpt.getAttribute('data-value') : 'page';
@@ -890,6 +939,7 @@ const Dialog = {
       totalUnitsInput.max = maxUnits;
       if (parseInt(totalUnitsInput.value) > maxUnits) totalUnitsInput.value = maxUnits;
       startPageGroup.style.display = (type === 'page') ? 'block' : 'none';
+      customUnitSizeGroup.style.display = (type === 'page') ? 'block' : 'none';
     };
 
     updateFields();
@@ -923,6 +973,7 @@ const Dialog = {
       newData.progression_name = nameInput.value;
       newData.start_date = dateInput.value;
       newData.start_page = type === 'page' ? parseInt(startPageInput.value) : 1;
+      newData.unit_size = type === 'page' ? parseFloat(customUnitSizeInput.value) || 1 : null;
 
       overlay.remove();
       if (onSubmit) onSubmit(newData);

@@ -16,7 +16,7 @@ const UIComponents = {
   },
 
   // Create a task card with priority badge
-  createTaskCard(item, stationNumber = null, priority = 1, isCompleted = false, unitType = 'page') {
+  createTaskCard(item, stationNumber = null, priority = 1, isCompleted = false, unitType = 'page', unitSize = null, config = null) {
     const card = document.createElement('div');
     card.className = 'schedule-item';
     card.dataset.itemId = item.id;
@@ -43,15 +43,24 @@ const UIComponents = {
     const title = document.createElement('h3');
     title.className = 'schedule-item-title';
 
-    // Dynamic title: Re-translate the content reference based on item ID if possible
-    // This solves the issue of "صفحة 2" not translating when switching languages
+    // Dynamic title: show page range when unit_size > 1 (e.g. "Page 1–4½"), else single unit label
     if (item.id && item.id.startsWith('item-')) {
       const parts = item.id.split('-');
       if (parts.length >= 3) {
-        const unitType = parts[1];
-        const itemNumber = parseInt(parts[2]);
+        const idUnitType = parts[1];
+        const itemNumber = parseInt(parts[2], 10);
         if (!isNaN(itemNumber)) {
-          title.textContent = Algorithm.formatContentReference(unitType, itemNumber);
+          const size = unitSize != null ? parseFloat(unitSize) : 1;
+          if (idUnitType === 'page' && size > 1 && config && config.start_page != null) {
+            const startPage = (config.start_page || 1) + (itemNumber - 1) * size;
+            const endPage = startPage + size;
+            title.textContent = Algorithm.formatPageRangeLabel(idUnitType, startPage, endPage);
+          } else {
+            const actualNumber = typeof Algorithm.calculateActualUnitNumber === 'function'
+              ? Algorithm.calculateActualUnitNumber(idUnitType, itemNumber, config)
+              : itemNumber;
+            title.textContent = Algorithm.formatContentReference(idUnitType, actualNumber, config);
+          }
         } else {
           title.textContent = item.content_reference;
         }
@@ -162,10 +171,31 @@ const UIComponents = {
 
     // Read icon button (if online and unit type is page) - placed on opposite side from checkbox
     if (navigator.onLine && unitType === 'page') {
-      // Extract page number from content_reference
-      const pageMatch = item.content_reference.match(/\d+/);
-      if (pageMatch) {
-        const pageNumber = parseInt(pageMatch[0]);
+      // Extract page number from content_reference (handles fractional numbers like "3½" or "3.5")
+      // Try to match fractional notation first (e.g., "3½", "1¼", "2¾")
+      let pageNumber = null;
+      const fractionalMatch = item.content_reference.match(/(\d+)([½¼¾])/);
+      if (fractionalMatch) {
+        const whole = parseInt(fractionalMatch[1]);
+        const fraction = fractionalMatch[2];
+        if (fraction === '½') pageNumber = whole + 0.5;
+        else if (fraction === '¼') pageNumber = whole + 0.25;
+        else if (fraction === '¾') pageNumber = whole + 0.75;
+      } else {
+        // Try decimal format (e.g., "3.5")
+        const decimalMatch = item.content_reference.match(/(\d+\.?\d*)/);
+        if (decimalMatch) {
+          pageNumber = parseFloat(decimalMatch[1]);
+        } else {
+          // Fallback to integer
+          const intMatch = item.content_reference.match(/\d+/);
+          if (intMatch) {
+            pageNumber = parseInt(intMatch[0]);
+          }
+        }
+      }
+      
+      if (pageNumber !== null) {
         const readIconBtn = document.createElement('button');
         readIconBtn.type = 'button';
         readIconBtn.className = 'btn-icon';
@@ -174,7 +204,7 @@ const UIComponents = {
         readIconBtn.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          UIComponents.showReadingModal(item.id, station, currentDate, pageNumber, 'page');
+          UIComponents.showReadingModal(item.id, station, currentDate, pageNumber, 'page', unitSize);
         });
 
         // Add book icon
@@ -431,7 +461,7 @@ const UIComponents = {
   },
 
   // Show reading modal
-  async showReadingModal(itemId, stationNumber, date, unitNumber, unitType = 'page') {
+  async showReadingModal(itemId, stationNumber, date, unitNumber, unitType = 'page', unitSize = null) {
     // Create modal overlay
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
@@ -480,7 +510,13 @@ const UIComponents = {
 
     const title = document.createElement('h3');
     title.style.cssText = 'font-size: 1.125rem; font-weight: 600; margin: 0; color: var(--fg);';
-    title.textContent = Algorithm.formatContentReference(unitType, unitNumber);
+    const size = unitSize != null ? parseFloat(unitSize) : 1;
+    if (unitType === 'page' && size > 1) {
+      const endPage = unitNumber + size;
+      title.textContent = Algorithm.formatPageRangeLabel(unitType, unitNumber, endPage);
+    } else {
+      title.textContent = Algorithm.formatContentReference(unitType, unitNumber);
+    }
     header.appendChild(title);
 
     const closeBtn = document.createElement('button');
@@ -558,7 +594,15 @@ const UIComponents = {
     try {
       let textData = null;
       if (unitType === 'page') {
-        textData = await QuranAPI.fetchPageText(unitNumber);
+        const size = unitSize != null ? parseFloat(unitSize) : 1;
+        if (size > 1) {
+          // Multi-page unit: fetch range from unitNumber to unitNumber + size
+          const endPage = unitNumber + size;
+          textData = await QuranAPI.fetchPageRange(unitNumber, endPage);
+        } else {
+          // Single page or fractional page (e.g. 3.5 = half of 3 + half of 4)
+          textData = await QuranAPI.fetchPageText(unitNumber);
+        }
       } else {
         // Fallback for other unit types
         content.textContent = 'Units other than "Page" are coming soon to the reader.';
