@@ -621,6 +621,195 @@ const UIComponents = {
       console.error('Error in reading modal:', error);
       content.textContent = i18n.t('reading.error');
     }
+  },
+
+  // Create a 365-day activity heatmap (Consistency Map)
+  createConsistencyMap(items) {
+    const container = document.createElement('div');
+    container.className = 'consistency-map';
+
+    // --- Aggregate daily counts from reviews_completed ---
+    const dailyCounts = {};
+    (items || []).forEach(item => {
+      (item.reviews_completed || []).forEach(entry => {
+        // Format: "station-YYYY-MM-DD"
+        const datePart = entry.substring(entry.indexOf('-') + 1);
+        dailyCounts[datePart] = (dailyCounts[datePart] || 0) + 1;
+      });
+    });
+
+    // --- Header ---
+    const header = document.createElement('div');
+    header.className = 'consistency-map-header';
+    const title = document.createElement('span');
+    title.className = 'consistency-map-title';
+    title.textContent = i18n.t('progress.consistencyMap');
+    header.appendChild(title);
+    container.appendChild(header);
+
+    // --- Build grid dates ---
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayDay = today.getDay(); // 0=Sun
+
+    // End on today, start 52 weeks + remaining days back to Sunday
+    const totalDays = 52 * 7 + todayDay + 1; // fill last partial week
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - totalDays + 1);
+
+    // Total weeks (columns)
+    const totalWeeks = Math.ceil(totalDays / 7);
+
+    // --- Scrollable wrapper ---
+    const scrollWrapper = document.createElement('div');
+    scrollWrapper.className = 'consistency-map-scroll';
+
+    const grid = document.createElement('div');
+    grid.className = 'consistency-map-grid';
+    grid.style.gridTemplateColumns = `auto repeat(${totalWeeks}, 12px)`;
+    grid.style.gridTemplateRows = `auto repeat(7, 12px)`;
+
+    // --- Month labels (row 1) ---
+    // Empty cell for day-label column
+    const cornerCell = document.createElement('div');
+    grid.appendChild(cornerCell);
+
+    const monthNames = i18n.currentLanguage === 'ar'
+      ? ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const dayLabels = i18n.currentLanguage === 'ar'
+      ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Determine which month label goes in which column
+    const monthPositions = new Map();
+    for (let week = 0; week < totalWeeks; week++) {
+      const weekStart = new Date(startDate);
+      weekStart.setDate(weekStart.getDate() + week * 7);
+      const month = weekStart.getMonth();
+      if (!monthPositions.has(month + '-' + weekStart.getFullYear())) {
+        monthPositions.set(month + '-' + weekStart.getFullYear(), { col: week, month });
+      }
+    }
+
+    for (let week = 0; week < totalWeeks; week++) {
+      const monthLabel = document.createElement('div');
+      monthLabel.className = 'consistency-map-month-label';
+      for (const [key, val] of monthPositions) {
+        if (val.col === week) {
+          monthLabel.textContent = monthNames[val.month];
+          break;
+        }
+      }
+      grid.appendChild(monthLabel);
+    }
+
+    // --- Tooltip element ---
+    const tooltip = document.createElement('div');
+    tooltip.className = 'consistency-map-tooltip';
+    container.appendChild(tooltip);
+
+    const showTooltip = (cell, date, count) => {
+      const dateStr = date.toLocaleDateString(i18n.currentLanguage === 'ar' ? 'ar-SA' : 'en-US', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+      const countText = count > 0
+        ? i18n.t('progress.tasksCompleted', { count })
+        : i18n.t('progress.noActivity');
+      tooltip.textContent = `${dateStr}: ${countText}`;
+      tooltip.classList.add('visible');
+
+      const rect = cell.getBoundingClientRect();
+      tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+      tooltip.style.top = `${rect.top - tooltip.offsetHeight - 6}px`;
+    };
+
+    const hideTooltip = () => {
+      tooltip.classList.remove('visible');
+    };
+
+    // Dismiss tooltip when tapping anywhere else on mobile
+    document.addEventListener('touchstart', (e) => {
+      if (!e.target.classList.contains('consistency-map-cell')) {
+        hideTooltip();
+      }
+    });
+
+    // --- Day cells (rows 1-7 for each week column) ---
+    for (let day = 0; day < 7; day++) {
+      // Day label column
+      const dayLabel = document.createElement('div');
+      dayLabel.className = 'consistency-map-day-label';
+      // Show labels for Mon (1), Wed (3), Fri (5)
+      if (day === 1 || day === 3 || day === 5) {
+        dayLabel.textContent = dayLabels[day];
+      }
+      grid.appendChild(dayLabel);
+
+      for (let week = 0; week < totalWeeks; week++) {
+        const cellDate = new Date(startDate);
+        cellDate.setDate(cellDate.getDate() + week * 7 + day);
+
+        const cell = document.createElement('div');
+        cell.className = 'consistency-map-cell';
+
+        // Don't render future dates
+        if (cellDate > today) {
+          cell.style.visibility = 'hidden';
+          grid.appendChild(cell);
+          continue;
+        }
+
+        const dateKey = DateUtils
+          ? DateUtils.getLocalDateString(cellDate)
+          : cellDate.toISOString().split('T')[0];
+        const count = dailyCounts[dateKey] || 0;
+
+        if (count >= 6) cell.classList.add('level-3');
+        else if (count >= 3) cell.classList.add('level-2');
+        else if (count >= 1) cell.classList.add('level-1');
+
+        cell.dataset.date = dateKey;
+        cell.dataset.count = count;
+
+        // Tooltip events
+        const capturedDate = new Date(cellDate);
+        const capturedCount = count;
+        cell.addEventListener('mouseenter', () => showTooltip(cell, capturedDate, capturedCount));
+        cell.addEventListener('mouseleave', hideTooltip);
+        cell.addEventListener('click', () => {
+          showTooltip(cell, capturedDate, capturedCount);
+        });
+
+        grid.appendChild(cell);
+      }
+    }
+
+    scrollWrapper.appendChild(grid);
+    container.appendChild(scrollWrapper);
+
+    // --- Legend ---
+    const legend = document.createElement('div');
+    legend.className = 'consistency-map-legend';
+
+    const lessLabel = document.createElement('span');
+    lessLabel.textContent = i18n.t('progress.less');
+    legend.appendChild(lessLabel);
+
+    for (let level = 0; level <= 3; level++) {
+      const swatch = document.createElement('div');
+      swatch.className = `consistency-map-legend-cell level-${level}`;
+      legend.appendChild(swatch);
+    }
+
+    const moreLabel = document.createElement('span');
+    moreLabel.textContent = i18n.t('progress.more');
+    legend.appendChild(moreLabel);
+
+    container.appendChild(legend);
+
+    return container;
   }
 };
 

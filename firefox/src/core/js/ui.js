@@ -888,6 +888,16 @@ const UI = {
     const timelineContainer = DOMCache.getElementById('progress-timeline');
     if (!timelineContainer) return;
 
+    // --- Consistency Map (Activity Heatmap) ---
+    let heatmapContainer = document.getElementById('consistency-map-container');
+    if (!heatmapContainer) {
+      heatmapContainer = document.createElement('div');
+      heatmapContainer.id = 'consistency-map-container';
+      timelineContainer.parentNode.insertBefore(heatmapContainer, timelineContainer);
+    }
+    heatmapContainer.replaceChildren();
+    heatmapContainer.appendChild(UIComponents.createConsistencyMap(allItems));
+
     // --- Progression Filter Logic ---
     // 1. Get unique progression names
     const progressionNames = [...new Set(allItems.map(i => i.progression_name || 'Default'))].sort();

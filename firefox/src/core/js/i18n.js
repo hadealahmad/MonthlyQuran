@@ -61,7 +61,12 @@ const translations = {
       saveChanges: 'Save Changes?',
       migrationWarning: 'This will update the progression settings. Existing progress will be migrated where possible.',
       updateSuccess: 'Progression updated successfully.',
-      updateError: 'Update failed'
+      updateError: 'Update failed',
+      consistencyMap: 'Consistency Map',
+      tasksCompleted: '{{count}} tasks completed',
+      noActivity: 'No activity',
+      less: 'Less',
+      more: 'More'
     },
     settings: {
       title: 'Settings',
@@ -261,7 +266,12 @@ const translations = {
       saveChanges: 'حفظ التغييرات؟',
       migrationWarning: 'سيؤدي هذا إلى تحديث إعدادات التقدم. سيتم نقل التقدم الحالي حيثما أمكن ذلك.',
       updateSuccess: 'تم تحديث التقدم بنجاح.',
-      updateError: 'فشل التحديث'
+      updateError: 'فشل التحديث',
+      consistencyMap: 'خريطة الاستمرارية',
+      tasksCompleted: '{{count}} مهام مكتملة',
+      noActivity: 'لا يوجد نشاط',
+      less: 'أقل',
+      more: 'أكثر'
     },
     settings: {
       title: 'الإعدادات',
