@@ -248,7 +248,7 @@ const UIComponents = {
   },
 
   // Create progress timeline item
-  createProgressTimelineItem(item) {
+  createProgressTimelineItem(item, config = null) {
     const timelineItem = document.createElement('div');
     timelineItem.className = 'timeline-item';
     timelineItem.dataset.itemId = item.id;
@@ -309,9 +309,13 @@ const UIComponents = {
     currentStationText.textContent = stationText.replace(/\{\{station\}\}/g, currentStation);
     meta.appendChild(currentStationText);
 
-    // Station indicators
+    // Station indicators (clickable to expand step details)
     const stationsContainer = document.createElement('div');
     stationsContainer.className = 'timeline-item-stations';
+
+    const stepDetailContainer = document.createElement('div');
+    stepDetailContainer.className = 'timeline-step-detail';
+    stepDetailContainer.setAttribute('aria-live', 'polite');
 
     for (let i = 1; i <= 7; i++) {
       const reviewDate = reviewDates[i - 1];
@@ -321,6 +325,34 @@ const UIComponents = {
       const isPast = reviewDateObj <= today;
 
       const indicator = this.createStationIndicator(i, isCompleted, i === currentStation, !isPast && i > currentStation);
+      indicator.setAttribute('role', 'button');
+      indicator.setAttribute('tabindex', '0');
+      indicator.setAttribute('aria-label', i18n.t(`stations.${i}`) + (isCompleted ? ' – ' + (i18n.t('progress.completed') || 'Completed') : ''));
+      indicator.setAttribute('aria-expanded', 'false');
+
+      const payload = { item, reviewDate, isCompleted, config };
+      indicator.addEventListener('click', () => {
+        const wasExpanded = indicator.classList.contains('expanded');
+        timelineItem.querySelectorAll('.station-indicator').forEach(ind => {
+          ind.classList.remove('expanded');
+          ind.setAttribute('aria-expanded', 'false');
+        });
+        stepDetailContainer.replaceChildren();
+        stepDetailContainer.classList.remove('is-visible');
+        if (!wasExpanded) {
+          const detailRow = this.createStepDetailRow(payload.item, payload.reviewDate, payload.isCompleted, payload.config);
+          stepDetailContainer.appendChild(detailRow);
+          stepDetailContainer.classList.add('is-visible');
+          indicator.classList.add('expanded');
+          indicator.setAttribute('aria-expanded', 'true');
+        }
+      });
+      indicator.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          indicator.click();
+        }
+      });
 
       if (i > 1) {
         const line = document.createElement('div');
@@ -334,8 +366,79 @@ const UIComponents = {
     timelineItem.appendChild(header);
     timelineItem.appendChild(meta);
     timelineItem.appendChild(stationsContainer);
+    timelineItem.appendChild(stepDetailContainer);
 
     return timelineItem;
+  },
+
+  // Compact row for expanded station step: date + quick read button (for incomplete, page-type only)
+  createStepDetailRow(item, reviewDate, isCompleted, config = null) {
+    const row = document.createElement('div');
+    row.className = 'step-detail-row';
+
+    const dateStr = new Date(reviewDate.date).toLocaleDateString(undefined, { dateStyle: 'medium' });
+    const dateEl = document.createElement('span');
+    dateEl.className = 'step-detail-date';
+    dateEl.textContent = dateStr;
+    row.appendChild(dateEl);
+
+    const actions = document.createElement('div');
+    actions.className = 'step-detail-actions';
+
+    if (isCompleted) {
+      const doneLabel = document.createElement('span');
+      doneLabel.className = 'step-detail-done';
+      doneLabel.textContent = i18n.t('progress.completed') || 'Done';
+      if (typeof SVGUtils !== 'undefined') {
+        const check = SVGUtils.createCheckboxChecked();
+        check.style.cssText = 'width: 1rem; height: 1rem;';
+        doneLabel.insertBefore(check, doneLabel.firstChild);
+      } else {
+        doneLabel.textContent = '✓ ' + (i18n.t('progress.completed') || 'Done');
+      }
+      actions.appendChild(doneLabel);
+    } else {
+      const unitType = (config && config.unit_type) || 'page';
+      const unitSize = (config && config.unit_size != null) ? config.unit_size : null;
+      if (navigator.onLine && unitType === 'page') {
+        let pageNumber = null;
+        const fractionalMatch = item.content_reference && item.content_reference.match(/(\d+)([½¼¾])/);
+        if (fractionalMatch) {
+          const whole = parseInt(fractionalMatch[1], 10);
+          const fraction = fractionalMatch[2];
+          if (fraction === '½') pageNumber = whole + 0.5;
+          else if (fraction === '¼') pageNumber = whole + 0.25;
+          else if (fraction === '¾') pageNumber = whole + 0.75;
+        } else {
+          const decimalMatch = item.content_reference && item.content_reference.match(/(\d+\.?\d*)/);
+          if (decimalMatch) pageNumber = parseFloat(decimalMatch[1]);
+          else {
+            const intMatch = item.content_reference && item.content_reference.match(/\d+/);
+            if (intMatch) pageNumber = parseInt(intMatch[0], 10);
+          }
+        }
+        if (pageNumber !== null) {
+          const readBtn = document.createElement('button');
+          readBtn.type = 'button';
+          readBtn.className = 'btn btn-sm btn-outline step-detail-read';
+          readBtn.setAttribute('aria-label', i18n.t('today.readText'));
+          readBtn.textContent = i18n.t('today.readText') || 'Read';
+          readBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            UIComponents.showReadingModal(item.id, reviewDate.station, reviewDate.date, pageNumber, 'page', unitSize);
+          });
+          if (typeof SVGUtils !== 'undefined') {
+            const bookIcon = SVGUtils.createBookIcon();
+            bookIcon.style.cssText = 'width: 1rem; height: 1rem; margin-right: 0.25rem;';
+            readBtn.insertBefore(bookIcon, readBtn.firstChild);
+          }
+          actions.appendChild(readBtn);
+        }
+      }
+    }
+
+    row.appendChild(actions);
+    return row;
   },
 
   // Create station indicator

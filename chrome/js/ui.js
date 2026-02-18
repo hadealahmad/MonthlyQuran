@@ -954,7 +954,7 @@ const UI = {
       });
 
       sortedItems.forEach(item => {
-        const timelineItem = UIComponents.createProgressTimelineItem(item);
+        const timelineItem = UIComponents.createProgressTimelineItem(item, config);
         fragment.appendChild(timelineItem);
       });
     }
