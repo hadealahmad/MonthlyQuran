@@ -11,7 +11,7 @@ const DEFAULT_CONFIG = {
   THEME: 'light',
   LANGUAGE: 'ar',
   PROGRESSION_NAME: '',
-  ENABLE_HAPTICS: true
+  ENABLE_TRANSITIONS: true
 };
 
 /**
@@ -109,6 +109,17 @@ const VIEWS = {
   SETTINGS: 'settings-view',
   CREDITS: 'credits-view'
 };
+/**
+ * Ordered list of main view IDs — used to determine slide direction
+ */
+const VIEW_ORDER = [
+  'today-view',
+  'progress-view',
+  'calendar-view',
+  'settings-view',
+  'credits-view'
+];
+
 // Expose to window for use in other modules
 window.DEFAULT_CONFIG = DEFAULT_CONFIG;
 window.PRIORITY = PRIORITY;
@@ -120,3 +131,4 @@ window.THEMES = THEMES;
 window.LANGUAGES = LANGUAGES;
 window.ITEM_STATUS = ITEM_STATUS;
 window.VIEWS = VIEWS;
+window.VIEW_ORDER = VIEW_ORDER;
