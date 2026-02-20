@@ -867,6 +867,26 @@ const UI = {
       }
     });
 
+    // Inject backlog tasks for real today (check actual date, not how function was called)
+    const isRealToday = target.getTime() === normalizedToday.getTime();
+    if (isRealToday) {
+      const queue = await Storage.getBacklogQueue();
+      if (queue) {
+        const catchupTasks = Backlog.getTasksForDate(queue, dateStr, allItems);
+        for (const catchupTask of catchupTasks) {
+          const taskKey = `${catchupTask.item.id}-${catchupTask.station}-${dateStr}`;
+          if (!uniqueTasksMap.has(taskKey)) {
+            uniqueTasksMap.set(taskKey, {
+              item: { ...catchupTask.item, dueStation: catchupTask.station },
+              priority: PRIORITY.CATCHUP,
+              station: catchupTask.station,
+              isCatchup: true
+            });
+          }
+        }
+      }
+    }
+
     // Convert back to array
     const uniqueTasks = Array.from(uniqueTasksMap.values());
 
@@ -908,6 +928,11 @@ const UI = {
       statsContainer.appendChild(fragment);
     }
 
+    // Render backlog banner or progress bar (only for real today)
+    if (isRealToday) {
+      await this._renderBacklogUI(allItems, dateStr);
+    }
+
     // Render unified task list
     const tasksContainer = DOMCache.getElementById('today-tasks');
     if (tasksContainer) {
@@ -921,8 +946,8 @@ const UI = {
         const empty = UIComponents.createEmptyState(i18n.t('dashboard.noItems'));
         fragment.appendChild(empty);
       } else {
-        uniqueTasks.forEach(({ item, priority, station, isCompleted }) => {
-          const taskCard = UIComponents.createTaskCard(item, station, priority, isCompleted, config.unit_type, config.unit_size, config);
+        uniqueTasks.forEach(({ item, priority, station, isCompleted, isCatchup }) => {
+          const taskCard = UIComponents.createTaskCard(item, station, priority, isCompleted, config.unit_type, config.unit_size, config, isCatchup || false);
           fragment.appendChild(taskCard);
         });
       }
@@ -952,6 +977,184 @@ const UI = {
 
       await this.createOrUpdateItem(unitType, itemNumber, itemDateStr, config, allItems);
     }
+  },
+
+  // --- Backlog UI Methods ---
+
+  async _renderBacklogUI(allItems, todayStr) {
+    // Remove any existing backlog UI
+    const existingBanner = document.getElementById('backlog-banner');
+    if (existingBanner) existingBanner.remove();
+
+    // Check for existing active queue first
+    const existingQueue = await Storage.getBacklogQueue();
+    if (existingQueue) {
+      const prunedQueue = Backlog.pruneQueue(existingQueue, todayStr);
+      if (prunedQueue.items.length > 0) {
+        await Storage.saveBacklogQueue(prunedQueue);
+        this._renderBacklogProgressBar(prunedQueue);
+        return;
+      } else {
+        await Storage.clearBacklogQueue();
+      }
+    }
+
+    // Detect overdue reviews
+    const overdueItems = Backlog.detectOverdueReviews(allItems, todayStr);
+    if (!Backlog.shouldShowBanner(overdueItems)) return;
+
+    // Show the banner
+    const banner = this._createBacklogBanner(overdueItems.length, () => {
+      this._showBacklogDialog(overdueItems, todayStr);
+    });
+
+    const statsContainer = DOMCache.getElementById('today-stats');
+    const tasksContainer = DOMCache.getElementById('today-tasks');
+    if (statsContainer && tasksContainer) {
+      statsContainer.parentNode.insertBefore(banner, tasksContainer);
+    }
+  },
+
+  _createBacklogBanner(overdueCount, onClickReschedule) {
+    const banner = document.createElement('div');
+    banner.id = 'backlog-banner';
+    banner.className = 'backlog-banner';
+
+    const textDiv = document.createElement('div');
+
+    const title = document.createElement('div');
+    title.className = 'backlog-banner-title';
+    title.textContent = i18n.t('backlog.bannerTitle');
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'backlog-banner-subtitle';
+    subtitle.textContent = i18n.t('backlog.bannerSubtitle', { count: overdueCount });
+
+    textDiv.appendChild(title);
+    textDiv.appendChild(subtitle);
+    banner.appendChild(textDiv);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-primary';
+    btn.textContent = i18n.t('backlog.bannerButton');
+    btn.addEventListener('click', onClickReschedule);
+    banner.appendChild(btn);
+
+    return banner;
+  },
+
+  _renderBacklogProgressBar(queue) {
+    const stats = Backlog.getQueueStats(queue);
+    const percent = stats.total > 0
+      ? Math.round(((stats.total - stats.remaining) / stats.total) * 100)
+      : 100;
+
+    const bar = document.createElement('div');
+    bar.id = 'backlog-banner';
+    bar.className = 'backlog-progress-banner';
+
+    const label = document.createElement('div');
+    label.className = 'backlog-progress-label';
+    label.textContent = i18n.t('backlog.progressLabel', {
+      remaining: stats.remaining,
+      total: stats.total
+    });
+
+    const track = document.createElement('div');
+    track.className = 'backlog-progress-track';
+    const fill = document.createElement('div');
+    fill.className = 'backlog-progress-fill';
+    fill.style.width = `${percent}%`;
+    track.appendChild(fill);
+
+    bar.appendChild(label);
+    bar.appendChild(track);
+
+    const statsContainer = DOMCache.getElementById('today-stats');
+    const tasksContainer = DOMCache.getElementById('today-tasks');
+    if (statsContainer && tasksContainer) {
+      statsContainer.parentNode.insertBefore(bar, tasksContainer);
+    }
+  },
+
+  _showBacklogDialog(overdueItems, todayStr) {
+    const overlay = document.createElement('div');
+    overlay.className = 'dialog-overlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem;';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'dialog';
+    dialog.style.cssText = 'background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; max-width: 28rem; width: 100%; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);';
+
+    // Title
+    const title = document.createElement('h3');
+    title.style.cssText = 'font-size: 1.25rem; font-weight: 600; margin: 0 0 0.5rem 0; color: var(--fg);';
+    title.textContent = i18n.t('backlog.dialogTitle');
+    dialog.appendChild(title);
+
+    // Description
+    const desc = document.createElement('p');
+    desc.style.cssText = 'font-size: 0.875rem; color: var(--muted-fg); margin: 0 0 1.5rem 0; line-height: 1.6;';
+    desc.textContent = i18n.t('backlog.dialogDesc', {
+      count: overdueItems.length,
+      capacity: BACKLOG_DAILY_CAPACITY
+    });
+    dialog.appendChild(desc);
+
+    // Spread options label
+    const optionsLabel = document.createElement('div');
+    optionsLabel.style.cssText = 'font-size: 0.875rem; font-weight: 500; margin-bottom: 0.75rem; color: var(--fg);';
+    optionsLabel.textContent = i18n.t('backlog.spreadLabel');
+    dialog.appendChild(optionsLabel);
+
+    // Toggle options
+    let selectedSpread = BACKLOG_SPREAD_OPTIONS[1]; // default 5 days
+    const toggleGroup = document.createElement('div');
+    toggleGroup.className = 'toggle-options';
+    toggleGroup.style.cssText = 'margin-bottom: 1.5rem;';
+
+    BACKLOG_SPREAD_OPTIONS.forEach(days => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `toggle-option ${days === selectedSpread ? 'active' : ''}`;
+      btn.setAttribute('data-value', days);
+      btn.textContent = i18n.t('backlog.spreadOption', { days });
+      btn.addEventListener('click', () => {
+        toggleGroup.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedSpread = days;
+      });
+      toggleGroup.appendChild(btn);
+    });
+    dialog.appendChild(toggleGroup);
+
+    // Buttons
+    const buttons = document.createElement('div');
+    buttons.style.cssText = 'display: flex; flex-direction: column; gap: 0.75rem;';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'btn btn-primary btn-full';
+    confirmBtn.textContent = i18n.t('backlog.confirmButton');
+    confirmBtn.addEventListener('click', async () => {
+      overlay.remove();
+      const queue = Backlog.buildQueue(overdueItems, todayStr, selectedSpread);
+      await Storage.saveBacklogQueue(queue);
+      Algorithm.clearScheduleCache();
+      await this.renderTodayView(this.currentDate);
+    });
+    buttons.appendChild(confirmBtn);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-ghost btn-full';
+    cancelBtn.textContent = i18n.t('common.cancel');
+    cancelBtn.addEventListener('click', () => overlay.remove());
+    buttons.appendChild(cancelBtn);
+
+    dialog.appendChild(buttons);
+    overlay.appendChild(dialog);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    confirmBtn.focus();
   },
 
   // Render progress view (timeline)

@@ -6,7 +6,8 @@ const STORAGE_KEYS = {
   ITEMS: 'quran_memorization_items',
   CURRENT_VIEW: 'quran_memorization_current_view',
   INSTALL_PROMPT_SHOWN: 'quran_memorization_install_prompt_shown',
-  SURAH_METADATA: 'quran_surah_metadata'
+  SURAH_METADATA: 'quran_surah_metadata',
+  BACKLOG_QUEUE: 'quran_memorization_backlog_queue'
 };
 
 // User Configuration Management
@@ -302,6 +303,60 @@ const Storage = {
     }
   },
 
+  // --- Backlog Queue Methods ---
+
+  async getBacklogQueue() {
+    try {
+      const raw = await StorageAdapter.get(STORAGE_KEYS.BACKLOG_QUEUE);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (error) {
+      Logger.error('Error getting backlog queue:', error);
+      return null;
+    }
+  },
+
+  async saveBacklogQueue(queue) {
+    try {
+      await StorageAdapter.set(STORAGE_KEYS.BACKLOG_QUEUE, JSON.stringify(queue));
+      return true;
+    } catch (error) {
+      Logger.error('Error saving backlog queue:', error);
+      return false;
+    }
+  },
+
+  async clearBacklogQueue() {
+    try {
+      await StorageAdapter.remove(STORAGE_KEYS.BACKLOG_QUEUE);
+      return true;
+    } catch (error) {
+      Logger.error('Error clearing backlog queue:', error);
+      return false;
+    }
+  },
+
+  async markBacklogItemComplete(itemId, station, rescheduledDate) {
+    try {
+      const queue = await this.getBacklogQueue();
+      if (!queue) return false;
+      const entry = queue.items.find(e =>
+        e.item_id === itemId &&
+        e.station === station &&
+        e.rescheduled_date === rescheduledDate &&
+        e.status === 'pending'
+      );
+      if (entry) {
+        entry.status = 'completed';
+        await this.saveBacklogQueue(queue);
+      }
+      return true;
+    } catch (error) {
+      Logger.error('Error marking backlog item complete:', error);
+      return false;
+    }
+  },
+
   /**
    * Clear all data
    * @returns {Promise<boolean>} True if successful, false otherwise
@@ -310,6 +365,7 @@ const Storage = {
     try {
       await StorageAdapter.remove(STORAGE_KEYS.CONFIG);
       await StorageAdapter.remove(STORAGE_KEYS.ITEMS);
+      await StorageAdapter.remove(STORAGE_KEYS.BACKLOG_QUEUE);
       return true;
     } catch (error) {
       Logger.error('Error clearing data:', error);
@@ -326,6 +382,7 @@ const Storage = {
       const data = {
         config: await this.getConfig(),
         items: await this.getAllItems(),
+        backlog_queue: await this.getBacklogQueue(),
         exported_at: new Date().toISOString()
       };
       return JSON.stringify(data, null, 2);
@@ -350,6 +407,10 @@ const Storage = {
 
       if (data.items && Array.isArray(data.items)) {
         await StorageAdapter.set(STORAGE_KEYS.ITEMS, JSON.stringify(data.items));
+      }
+
+      if (data.backlog_queue) {
+        await this.saveBacklogQueue(data.backlog_queue);
       }
 
       return true;

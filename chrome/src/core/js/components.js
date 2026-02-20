@@ -16,7 +16,7 @@ const UIComponents = {
   },
 
   // Create a task card with priority badge
-  createTaskCard(item, stationNumber = null, priority = 1, isCompleted = false, unitType = 'page', unitSize = null, config = null) {
+  createTaskCard(item, stationNumber = null, priority = 1, isCompleted = false, unitType = 'page', unitSize = null, config = null, isCatchup = false) {
     const card = document.createElement('div');
     card.className = 'schedule-item';
     card.dataset.itemId = item.id;
@@ -96,6 +96,14 @@ const UIComponents = {
     badge.textContent = priorityText;
     meta.appendChild(badge);
 
+    // Catch-up badge for rescheduled backlog tasks
+    if (isCatchup) {
+      const catchupBadge = document.createElement('span');
+      catchupBadge.className = 'priority-badge priority-catchup';
+      catchupBadge.textContent = i18n.t('backlog.catchupBadge');
+      meta.appendChild(catchupBadge);
+    }
+
     // Station label
     const stationLabel = document.createElement('span');
     stationLabel.className = 'station-label';
@@ -157,6 +165,10 @@ const UIComponents = {
           await Storage.unmarkReviewComplete(item.id, station, currentDateStr);
         } else {
           await Storage.markReviewComplete(item.id, station, currentDateStr);
+          if (isCatchup) {
+            await Storage.markBacklogItemComplete(item.id, station, currentDateStr);
+            Algorithm.clearScheduleCache();
+          }
         }
 
         // Re-render the view, preserving the current date context
@@ -776,6 +788,7 @@ const UIComponents = {
     container.className = 'consistency-map';
 
     // --- Aggregate daily counts from reviews_completed ---
+    
     const dailyCounts = {};
     (items || []).forEach(item => {
       (item.reviews_completed || []).forEach(entry => {
