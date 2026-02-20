@@ -70,27 +70,50 @@ const UI = {
   // Show a specific view
   async showView(viewId) {
     try {
-      // Get all views - don't use cache here to be safe
-      const views = document.querySelectorAll('.view');
-      if (views.length > 0) {
-        // Use a standard for loop for better compatibility
+      // --- Determine slide direction before any DOM changes ---
+      const fromIndex = VIEW_ORDER.indexOf(this.currentView);
+      const toIndex = VIEW_ORDER.indexOf(viewId);
+      const direction = (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex)
+        ? 'none'
+        : (toIndex > fromIndex ? 'forward' : 'backward');
+
+      // Set CSS custom property so @keyframes know which way to slide
+      document.documentElement.style.setProperty('--slide-direction', direction);
+
+      // --- Core DOM swap (wrapped in transition when supported & enabled) ---
+      // window.scrollTo is inside doSwap so it fires synchronously with the
+      // DOM update — this prevents Firefox from rendering an intermediate
+      // state during the async Storage.getConfig() call below.
+      // For Chrome's startViewTransition, the callback runs synchronously
+      // before the snapshot is captured, so scroll still works correctly.
+      const doSwap = () => {
+        window.scrollTo(0, 0);
+        const views = document.querySelectorAll('.view');
         for (let i = 0; i < views.length; i++) {
           views[i].classList.add('hidden');
         }
-      }
+        const targetView = document.getElementById(viewId);
+        if (targetView) {
+          targetView.classList.remove('hidden');
+        } else {
+          Logger.error(`View not found: ${viewId}`);
+        }
+      };
 
-      const targetView = document.getElementById(viewId);
-      if (targetView) {
-        targetView.classList.remove('hidden');
+      // --- Use View Transitions API if supported and enabled ---
+      const config = await Storage.getConfig();
+      const transitionsEnabled = config
+        ? (config.enable_transitions !== false)
+        : DEFAULT_CONFIG.ENABLE_TRANSITIONS;
 
-        // Ensure the screen scrolls back to top during view switch
-        window.scrollTo(0, 0);
+      if (transitionsEnabled && typeof document.startViewTransition === 'function') {
+        const transition = document.startViewTransition(doSwap);
+        await transition.ready;
       } else {
-        Logger.error(`View not found: ${viewId}`);
+        doSwap();
       }
 
-      // Update tab active state
-      // Update tab active state
+      // Update tab active state (outside transition — visual only)
       this.updateTabActiveState(viewId);
 
       // Update history: if viewId is different from current, push current to history
@@ -166,10 +189,6 @@ const UI = {
     bottomNav.addEventListener('click', async (e) => {
       const tab = e.target.closest('.nav-tab');
       if (!tab) return;
-
-      if (typeof HapticsService !== 'undefined') {
-        HapticsService.selection();
-      }
 
       const viewId = tab.getAttribute('data-view');
       if (viewId) {
@@ -1184,6 +1203,23 @@ const UI = {
       });
     }
 
+    // Initialize transitions toggle
+    const transitionsToggle = DOMCache.getElementById('settings-transitions-toggle');
+    if (transitionsToggle) {
+      const selectedValue = String(
+        config.enable_transitions !== undefined
+          ? config.enable_transitions
+          : DEFAULT_CONFIG.ENABLE_TRANSITIONS
+      );
+      transitionsToggle.querySelectorAll('.toggle-option').forEach(btn => {
+        if (btn.getAttribute('data-value') === selectedValue) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
     // Set time inputs
     const morningHourInput = DOMCache.getElementById('settings-morning-hour');
     const eveningHourInput = DOMCache.getElementById('settings-evening-hour');
@@ -1196,18 +1232,6 @@ const UI = {
     if (eveningHourInput) {
       const eveningHour = config.evening_hour !== undefined ? config.evening_hour : DEFAULT_CONFIG.EVENING_HOUR;
       eveningHourInput.value = `${String(eveningHour).padStart(2, '0')}:00`;
-    }
-
-    const hapticsToggle = DOMCache.getElementById('settings-haptics-toggle');
-    if (hapticsToggle) {
-      const isEnabledValue = config.enable_haptics !== false ? 'true' : 'false';
-      hapticsToggle.querySelectorAll('.toggle-option').forEach(btn => {
-        if (btn.getAttribute('data-value') === isEnabledValue) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
     }
 
     // Initialize toggle event listeners
@@ -1257,23 +1281,19 @@ const UI = {
       });
     }
 
-    // Haptics toggle
-    const hapticsToggleInput = DOMCache.getElementById('settings-haptics-toggle');
-    if (hapticsToggleInput) {
-      hapticsToggleInput.querySelectorAll('.toggle-option').forEach(btn => {
+    // Transitions toggle
+    const transitionsToggle = DOMCache.getElementById('settings-transitions-toggle');
+    if (transitionsToggle) {
+      transitionsToggle.querySelectorAll('.toggle-option').forEach(btn => {
         btn.addEventListener('click', async () => {
           const value = btn.getAttribute('data-value') === 'true';
-          hapticsToggleInput.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+          transitionsToggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
 
           const config = await Storage.getConfig();
           if (config) {
-            config.enable_haptics = value;
+            config.enable_transitions = value;
             await Storage.saveConfig(config);
-            if (typeof HapticsService !== 'undefined') {
-              HapticsService.updateConfig(value);
-              HapticsService.selection(); // Provide immediate small feedback when interacting
-            }
           }
         });
       });

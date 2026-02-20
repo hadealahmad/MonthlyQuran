@@ -29,7 +29,9 @@ const Storage = {
         evening_hour: config.evening_hour !== undefined ? config.evening_hour : DEFAULT_CONFIG.EVENING_HOUR,
         start_page: config.start_page !== undefined ? config.start_page : 1,
         unit_size: config.unit_type === 'page' && config.unit_size != null ? config.unit_size : null,
-        enable_haptics: config.enable_haptics !== undefined ? config.enable_haptics : DEFAULT_CONFIG.ENABLE_HAPTICS,
+        enable_transitions: config.enable_transitions !== undefined
+          ? config.enable_transitions
+          : DEFAULT_CONFIG.ENABLE_TRANSITIONS,
         updated_at: new Date().toISOString()
       };
       await StorageAdapter.set(STORAGE_KEYS.CONFIG, JSON.stringify(configData));

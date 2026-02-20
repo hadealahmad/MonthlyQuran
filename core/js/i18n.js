@@ -90,7 +90,7 @@ const translations = {
       resetApp: 'Reset Application',
       exportData: 'Export Data',
       importData: 'Import Data',
-      enableHaptics: 'Device Vibration'
+      transitions: 'Animated Transitions'
     },
     calendar: {
       close: 'Close',
@@ -164,8 +164,8 @@ const translations = {
       exportConfirm: 'Export will download all your data as a JSON file.',
       importConfirm: 'Importing will overwrite all current data. Are you sure?',
       resetConfirm: 'Are you sure you want to reset the application? This will delete all your data and cannot be undone.',
-      enable: 'On',
-      disable: 'Off'
+      on: 'On',
+      off: 'Off'
     },
     aria: {
       toggleLanguage: 'Toggle language',
@@ -307,7 +307,7 @@ const translations = {
       resetApp: 'إعادة تعيين التطبيق',
       exportData: 'تصدير البيانات',
       importData: 'استيراد البيانات',
-      enableHaptics: 'اهتزاز الجهاز'
+      transitions: 'انتقالات متحركة'
     },
     calendar: {
       close: 'إغلاق',
@@ -381,8 +381,8 @@ const translations = {
       exportConfirm: 'سيقوم التصدير بتنزيل جميع بياناتك كملف JSON.',
       importConfirm: 'سيؤدي الاستيراد إلى استبدال جميع البيانات الحالية. هل أنت متأكد؟',
       resetConfirm: 'هل أنت متأكد من إعادة تعيين التطبيق؟ سيؤدي هذا إلى حذف جميع بياناتك ولا يمكن التراجع عنه.',
-      enable: 'تفعيل',
-      disable: 'إيقاف'
+      on: 'تشغيل',
+      off: 'إيقاف'
     },
     aria: {
       toggleLanguage: 'تبديل اللغة',
