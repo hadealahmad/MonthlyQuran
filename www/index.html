@@ -322,6 +322,17 @@
                                             data-i18n="theme.dark">Dark</button>
                                     </div>
                                 </div>
+
+                                <div class="setup-toggle-group">
+                                    <label>
+                                        <i class="fas fa-mobile-alt"></i>
+                                        <span data-i18n="settings.enableHaptics">Device Vibration</span>
+                                    </label>
+                                    <div class="toggle-options" id="settings-haptics-toggle" role="group" aria-label="Device Vibration">
+                                        <button type="button" class="toggle-option" data-value="true" data-i18n="common.enable">On</button>
+                                        <button type="button" class="toggle-option" data-value="false" data-i18n="common.disable">Off</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -335,6 +346,7 @@
                                     Hour</label>
                                 <input type="time" id="settings-evening-hour" class="input" required>
                             </div>
+
 
                             <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 0.75rem;">
                                 <button type="button" id="settings-privacy-btn" class="btn btn-outline btn-full"
@@ -525,6 +537,7 @@
     <script src="core/js/calendar.js"></script>
     <script src="core/js/ui.js"></script>
     <script src="core/js/adapter/notifications.js"></script>
+    <script src="core/js/utils/haptics.js"></script>
     <script src="core/js/app.js"></script>
 
     <!-- Service Worker Registration -->

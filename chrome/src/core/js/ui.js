@@ -167,6 +167,10 @@ const UI = {
       const tab = e.target.closest('.nav-tab');
       if (!tab) return;
 
+      if (typeof HapticsService !== 'undefined') {
+        HapticsService.selection();
+      }
+
       const viewId = tab.getAttribute('data-view');
       if (viewId) {
         await this.showView(viewId);
@@ -1194,6 +1198,18 @@ const UI = {
       eveningHourInput.value = `${String(eveningHour).padStart(2, '0')}:00`;
     }
 
+    const hapticsToggle = DOMCache.getElementById('settings-haptics-toggle');
+    if (hapticsToggle) {
+      const isEnabledValue = config.enable_haptics !== false ? 'true' : 'false';
+      hapticsToggle.querySelectorAll('.toggle-option').forEach(btn => {
+        if (btn.getAttribute('data-value') === isEnabledValue) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
     // Initialize toggle event listeners
     this.initSettingsToggles();
   },
@@ -1236,6 +1252,28 @@ const UI = {
             config.theme = value;
             await Storage.saveConfig(config);
             await Theme.setTheme(value);
+          }
+        });
+      });
+    }
+
+    // Haptics toggle
+    const hapticsToggleInput = DOMCache.getElementById('settings-haptics-toggle');
+    if (hapticsToggleInput) {
+      hapticsToggleInput.querySelectorAll('.toggle-option').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const value = btn.getAttribute('data-value') === 'true';
+          hapticsToggleInput.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          const config = await Storage.getConfig();
+          if (config) {
+            config.enable_haptics = value;
+            await Storage.saveConfig(config);
+            if (typeof HapticsService !== 'undefined') {
+              HapticsService.updateConfig(value);
+              HapticsService.selection(); // Provide immediate small feedback when interacting
+            }
           }
         });
       });

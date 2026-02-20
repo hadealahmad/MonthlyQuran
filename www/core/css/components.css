@@ -630,6 +630,18 @@
   flex-direction: column;
 }
 
+.setup-toggle-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--fg);
+}
+
+
+
 .toggle-options {
   display: flex;
   gap: 0.5rem;
@@ -1102,11 +1114,9 @@
     width: 10px;
     height: 10px;
   }
-
   .consistency-map-grid {
     grid-template-columns: auto repeat(53, 10px);
     grid-template-rows: auto repeat(7, 10px);
     gap: 2px;
   }
-}
 }

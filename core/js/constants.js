@@ -10,7 +10,8 @@ const DEFAULT_CONFIG = {
   EVENING_HOUR: 20,
   THEME: 'light',
   LANGUAGE: 'ar',
-  PROGRESSION_NAME: ''
+  PROGRESSION_NAME: '',
+  ENABLE_HAPTICS: true
 };
 
 /**

@@ -154,8 +154,10 @@ const UIComponents = {
       // Wait for animation to complete
       setTimeout(async () => {
         if (currentlyCompleted) {
+          if (typeof HapticsService !== 'undefined') HapticsService.light();
           await Storage.unmarkReviewComplete(item.id, station, currentDateStr);
         } else {
+          if (typeof HapticsService !== 'undefined') HapticsService.success();
           await Storage.markReviewComplete(item.id, station, currentDateStr);
         }
 
@@ -526,9 +528,11 @@ const UIComponents = {
       setTimeout(async () => {
         if (currentlyCompleted) {
           // Uncheck - remove from completed
+          if (typeof HapticsService !== 'undefined') HapticsService.light();
           await Storage.unmarkReviewComplete(item.id, station, currentDateStr);
         } else {
           // Mark as complete
+          if (typeof HapticsService !== 'undefined') HapticsService.success();
           await Storage.markReviewComplete(item.id, station, currentDateStr);
         }
 
@@ -670,8 +674,10 @@ const UIComponents = {
       const isCompleted = await Storage.isReviewCompleted(itemId, stationNumber, date);
 
       if (isCompleted) {
+        if (typeof HapticsService !== 'undefined') HapticsService.light();
         await Storage.unmarkReviewComplete(itemId, stationNumber, date);
       } else {
+        if (typeof HapticsService !== 'undefined') HapticsService.success();
         await Storage.markReviewComplete(itemId, stationNumber, date);
       }
 
