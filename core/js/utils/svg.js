@@ -134,6 +134,65 @@ const SVGUtils = {
       { tag: 'line', attrs: { x1: '18', y1: '6', x2: '6', y2: '18' } },
       { tag: 'line', attrs: { x1: '6', y1: '6', x2: '18', y2: '18' } }
     ]);
-  }
+  },
+
+
+createPlayIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+
+    const polygon = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "polygon",
+    );
+    polygon.setAttribute("points", "5 3 19 12 5 21 5 3");
+    svg.appendChild(polygon);
+
+    return svg;
+  },
+
+
+  
+  createPauseIcon() {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+
+    const rect1 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "rect",
+    );
+    rect1.setAttribute("x", "6");
+    rect1.setAttribute("y", "4");
+    rect1.setAttribute("width", "4");
+    rect1.setAttribute("height", "16");
+
+    const rect2 = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "rect",
+    );
+    rect2.setAttribute("x", "14");
+    rect2.setAttribute("y", "4");
+    rect2.setAttribute("width", "4");
+    rect2.setAttribute("height", "16");
+
+    svg.appendChild(rect1);
+    svg.appendChild(rect2);
+    return svg;
+  },
+
 };
 
