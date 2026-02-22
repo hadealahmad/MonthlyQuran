@@ -39,8 +39,8 @@ const UIComponents = {
           ? DateUtils.getLocalDateString(window.UI.currentDate)
           : window.UI.currentDate.toISOString().split("T")[0]
         : DateUtils
-          ? DateUtils.getLocalDateString(new Date())
-          : new Date().toISOString().split("T")[0];
+        ? DateUtils.getLocalDateString(new Date())
+        : new Date().toISOString().split("T")[0];
 
     // stationNumber or default to 1 for checking completion
     const station = stationNumber || 1;
@@ -499,7 +499,9 @@ const UIComponents = {
 
       if (i > 1) {
         const line = document.createElement("div");
-        line.className = `station-progress-line ${isCompleted ? "completed" : ""}`;
+        line.className = `station-progress-line ${
+          isCompleted ? "completed" : ""
+        }`;
         stationsContainer.appendChild(line);
       }
 
@@ -630,8 +632,8 @@ const UIComponents = {
     const currentDate = dateInput
       ? dateInput.value
       : DateUtils
-        ? DateUtils.getLocalDateString(new Date())
-        : new Date().toISOString().split("T")[0];
+      ? DateUtils.getLocalDateString(new Date())
+      : new Date().toISOString().split("T")[0];
 
     if (isCompleted) {
       card.classList.add("completed");
@@ -854,7 +856,9 @@ const UIComponents = {
       date,
     );
     const toggleCompletionBtn = document.createElement("button");
-    toggleCompletionBtn.className = `btn ${isCompleted ? "btn-success" : "btn-outline-success"}`;
+    toggleCompletionBtn.className = `btn ${
+      isCompleted ? "btn-success" : "btn-outline-success"
+    }`;
     toggleCompletionBtn.style.cssText = "width: 100%;";
     toggleCompletionBtn.textContent = i18n.t("reading.markAsRead");
 
@@ -873,7 +877,9 @@ const UIComponents = {
         await Storage.markReviewComplete(itemId, stationNumber, date);
       }
 
-      toggleCompletionBtn.className = `btn ${!isCompleted ? "btn-success" : "btn-outline-success"}`;
+      toggleCompletionBtn.className = `btn ${
+        !isCompleted ? "btn-success" : "btn-outline-success"
+      }`;
 
       if (window.UI?.renderTodayView) {
         const uiDate = window.UI.currentDate || new Date();
@@ -1018,12 +1024,12 @@ const UIComponents = {
 
           ayahSpan.appendChild(badge);
           content.appendChild(ayahSpan);
-
-          audioPlayer.addEventListener("ended", () => {
-            if (currentPlayBtn)
-              currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
-            currentPlayBtn = null;
-          });
+        });
+        
+        audioPlayer.addEventListener("ended", () => {
+          if (currentPlayBtn)
+            currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+          currentPlayBtn = null;
         });
 
         modal.appendChild(footer);
@@ -1172,7 +1178,9 @@ const UIComponents = {
       tooltip.classList.add("visible");
 
       const rect = cell.getBoundingClientRect();
-      tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+      tooltip.style.left = `${
+        rect.left + rect.width / 2 - tooltip.offsetWidth / 2
+      }px`;
       tooltip.style.top = `${rect.top - tooltip.offsetHeight - 6}px`;
     };
 
