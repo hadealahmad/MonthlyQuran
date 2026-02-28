@@ -1,6 +1,6 @@
 {
   "name": "monthlyquran",
-  "version": "1.5.2",
+  "version": "1.6.3",
   "description": "A simple web application for tracking Quran memorization using a spaced repetition system. The app helps you follow a 7-station review schedule based on memory retention principles.",
   "main": "sw.js",
   "directories": {

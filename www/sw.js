@@ -1,4 +1,4 @@
-const CACHE_NAME = 'monthlyquran-v1.5.2';
+const CACHE_NAME = 'monthlyquran-v1.5.7';
 const urlsToCache = [
   './',
   './index.html',
@@ -27,6 +27,15 @@ const urlsToCache = [
   './manifest.json'
 ];
 
+// CSS files — always fetch fresh from network (never serve from cache)
+const CSS_FILES = [
+  './core/css/components.css',
+  './core/css/styles.css',
+  './core/css/themes.css',
+  './core/css/navigation.css',
+  './core/css/fonts.css',
+];
+
 // Install event - cache resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -53,20 +62,37 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  const isCSSFile = CSS_FILES.some(f => url.pathname.endsWith(f.replace('./', '/')));
+
+  if (isCSSFile) {
+    // Network-first for CSS: always get fresh styles, fall back to cache
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          // Update cache with fresh version
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for everything else
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
         return response || fetch(event.request);
       })
       .catch(() => {
-        // If both fail, return offline page for navigation requests
         if (event.request.mode === 'navigate') {
           return caches.match('./index.html');
         }
       })
   );
 });
+
 

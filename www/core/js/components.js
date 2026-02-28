@@ -659,15 +659,14 @@ const UIComponents = {
 
     // Content area
     const content = document.createElement('div');
-    content.className = 'reading-content';
+    content.className = 'reading-content mushaf-page';
     content.style.cssText = `
       flex: 1;
       overflow-y: auto;
-      padding: 1.5rem;
-      direction: rtl; /* Quran text is always RTL */
-      line-height: 2.2;
-      font-size: 1.35rem;
-      font-family: 'Amiri', serif;
+      overflow-x: hidden;
+      padding: 1.5rem 1.25rem 1rem;
+      direction: rtl;
+      background-color: var(--bg);
       color: var(--fg);
     `;
 
@@ -743,51 +742,115 @@ const UIComponents = {
       if (textData && textData.data && textData.data.ayahs) {
         content.replaceChildren();
 
-        // Group by surah for better display
+        // Helper: Western digits → Arabic-Indic numerals
+        const toArabicNumerals = (n) =>
+          String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+        // Mushaf page wrapper
+        const pageWrap = document.createElement('div');
+        pageWrap.style.cssText = `
+          font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', serif;
+          font-size: 1.25rem;
+          line-height: 2.2;
+          text-align: justify;
+          color: var(--fg);
+          overflow-wrap: break-word;
+          word-break: break-word;
+        `;
+
         let currentSurah = null;
+        let currentBlock = null;
+
+        const flushBlock = () => {
+          if (currentBlock) { pageWrap.appendChild(currentBlock); currentBlock = null; }
+        };
 
         textData.data.ayahs.forEach(ayah => {
+          // New surah
           if (currentSurah !== ayah.surah.number) {
+            flushBlock();
             currentSurah = ayah.surah.number;
-            const surahTitle = document.createElement('div');
-            surahTitle.style.cssText = `
+
+            // Surah name banner
+            const surahBanner = document.createElement('div');
+            surahBanner.style.cssText = `
               text-align: center;
-              background-color: var(--muted-bg);
-              padding: 0.5rem;
-              margin: 1.5rem 0 1rem 0;
-              border-radius: var(--radius);
-              font-size: 1.1rem;
-              color: var(--primary-bg);
+              margin: 1.25rem 0 0.75rem;
+              padding: 0.5rem 1rem;
+              border-top: 1px solid var(--border-color);
+              border-bottom: 1px solid var(--border-color);
+              font-family: 'Amiri Quran', 'Amiri', serif;
+              font-size: 1.3rem;
               font-weight: bold;
+              color: var(--fg);
             `;
-            surahTitle.textContent = `${ayah.surah.name}`;
-            content.appendChild(surahTitle);
+            surahBanner.textContent = ayah.surah.name;
+            pageWrap.appendChild(surahBanner);
+
+            // Bismillah — skip At-Tawbah (9) and Al-Fatiha first ayah (included in text)
+            if (ayah.surah.number !== 9 && !(ayah.surah.number === 1 && ayah.numberInSurah === 1)) {
+              const bismillah = document.createElement('div');
+              bismillah.style.cssText = `
+                text-align: center;
+                font-family: 'Amiri Quran', 'Amiri', serif;
+                font-size: 1.3rem;
+                margin-bottom: 0.75rem;
+                color: var(--fg);
+              `;
+              bismillah.textContent = '\u0628\u0650\u0633\u0652\u0645\u0650 \u0671\u0644\u0644\u0651\u064E\u0647\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0650\u06CC\u0645\u0650';
+              pageWrap.appendChild(bismillah);
+            }
+
+            currentBlock = document.createElement('div');
+            currentBlock.style.cssText = 'text-align: justify; text-align-last: center;';
           }
 
-          const ayahSpan = document.createElement('span');
-          ayahSpan.className = 'ayah-text';
-          ayahSpan.textContent = ayah.text + ' ';
+          // Ayah text
+          currentBlock.appendChild(document.createTextNode(ayah.text + ' '));
 
-          const badge = document.createElement('span');
-          badge.style.cssText = `
+          // Ayah end marker: green circle with number (like Uthmani mushaf)
+          const marker = document.createElement('span');
+          marker.style.cssText = `
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 1.8rem;
-            height: 1.8rem;
-            border: 1px solid var(--border-color);
+            width: 1.6rem;
+            height: 1.6rem;
             border-radius: 50%;
-            font-size: 0.75rem;
-            margin: 0 0.5rem;
-            color: var(--muted-fg);
+            border: 1.5px solid var(--success-bg);
+            font-family: sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--success-bg);
             vertical-align: middle;
+            margin: 0 0.15em;
+            white-space: nowrap;
           `;
-          badge.textContent = ayah.numberInSurah;
-
-          ayahSpan.appendChild(badge);
-          content.appendChild(ayahSpan);
+          marker.textContent = toArabicNumerals(ayah.numberInSurah);
+          currentBlock.appendChild(marker);
+          currentBlock.appendChild(document.createTextNode(' '));
         });
 
+        flushBlock();
+
+        // Page number footer
+        const pageFooter = document.createElement('div');
+        pageFooter.style.cssText = `
+          text-align: center;
+          margin-top: 1.5rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid var(--border-color);
+          font-family: 'Amiri Quran', 'Amiri', serif;
+          font-size: 0.95rem;
+          color: var(--muted-fg);
+        `;
+        const displayPage = unitSize && parseFloat(unitSize) > 1
+          ? toArabicNumerals(unitNumber) + ' \u2013 ' + toArabicNumerals(Math.floor(unitNumber + parseFloat(unitSize) - 1))
+          : toArabicNumerals(unitNumber);
+        pageFooter.textContent = displayPage;
+        pageWrap.appendChild(pageFooter);
+
+        content.appendChild(pageWrap);
         modal.appendChild(footer);
       } else {
         content.textContent = i18n.t('reading.error');

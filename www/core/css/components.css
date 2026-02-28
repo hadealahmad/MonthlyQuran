@@ -795,6 +795,18 @@
   flex-direction: row-reverse;
 }
 
+/* Responsive grid for unit-type plan selector (5 buttons) — applies to all toggle-options */
+.toggle-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+}
+
+/* Juz button spans full width when it wraps to its own row */
+.toggle-options button[data-value="juz"] {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 /* Quick Stats */
 .quick-stats {
   background-color: var(--card-bg);
