@@ -90,7 +90,10 @@ const translations = {
       resetApp: 'Reset Application',
       exportData: 'Export Data',
       importData: 'Import Data',
-      enableHaptics: 'Device Vibration'
+      enableHaptics: 'Device Vibration',
+      /* ✅ إضافة ترجمة الانتقالات الإنجليزية */
+      enableTransitions: 'Smooth Transitions',
+      transitionsHint: 'Enable native-like view animations'
     },
     calendar: {
       close: 'Close',
@@ -320,7 +323,10 @@ const translations = {
       resetApp: 'إعادة تعيين التطبيق',
       exportData: 'تصدير البيانات',
       importData: 'استيراد البيانات',
-      enableHaptics: 'اهتزاز الجهاز'
+      enableHaptics: 'اهتزاز الجهاز',
+      /* ✅ إضافة ترجمة الانتقالات العربية */
+      enableTransitions: 'انتقالات سلسة',
+      transitionsHint: 'تفعيل حركات الأنميشن بين الصفحات'
     },
     calendar: {
       close: 'إغلاق',
@@ -556,4 +562,3 @@ const i18n = {
     }
   }
 };
-
