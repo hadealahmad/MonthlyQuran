@@ -15,6 +15,14 @@
   z-index: 100;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
   font-family: 'IBM Plex Sans Arabic', sans-serif;
+  
+  /* ✅ إضافة اسم الانتقال لتثبيت النابار أثناء الأنميشن */
+  view-transition-name: main-nav;
+}
+
+/* ✅ إضافة اسم الانتقال للهيدر أيضاً لضمان ثباته (يفضل وجودها هنا لربط عناصر الملاحة) */
+.app-header {
+  view-transition-name: main-header;
 }
 
 .nav-tab {
@@ -105,3 +113,8 @@
   direction: rtl;
 }
 
+/* ✅ تحسينات إضافية لسلاسة الأنميشن */
+::view-transition-group(main-nav),
+::view-transition-group(main-header) {
+  z-index: 200;
+}
