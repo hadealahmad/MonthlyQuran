@@ -288,16 +288,17 @@ const App = {
       });
     }
   }
+
+
 };
 
+window.App = App;
+
 // Initialize app when DOM and stylesheets are ready
-// Using window.load ensures all stylesheets are loaded before layout calculations
 if (document.readyState === 'loading') {
   window.addEventListener('load', () => App.init().catch(err => Logger.error('App init failed:', err)));
 } else if (document.readyState === 'interactive') {
-  // DOM ready but stylesheets might not be, wait for load
   window.addEventListener('load', () => App.init().catch(err => Logger.error('App init failed:', err)));
 } else {
-  // Already loaded
   App.init().catch(err => Logger.error('App init failed:', err));
 }
