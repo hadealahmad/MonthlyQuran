@@ -2,6 +2,23 @@
 // Note: Named UIComponents to avoid collision with Firefox's deprecated internal objects.
 
 const UIComponents = {
+  // 1. Add the audio playback method
+  playAyahAudio(surah, ayah) {
+    const reciter = "Alafasy_128kbps";
+    const surahStr = String(surah).padStart(3, '0');
+    const ayahStr = String(ayah).padStart(3, '0');
+    const url = `https://everyayah.com/data/${reciter}/${surahStr}${ayahStr}.mp3`;
+
+    let player = document.getElementById("audioPlayer");
+    if (!player) {
+      player = document.createElement("audio");
+      player.id = "audioPlayer";
+      player.style.display = "none";
+      document.body.appendChild(player);
+    }
+    player.src = url;
+    player.play().catch(e => console.error("Audio error:", e));
+  },
   // Create a button element
   createButton(text, variant = 'default', size = 'default', onClick = null) {
     const button = document.createElement('button');
@@ -726,68 +743,87 @@ const UIComponents = {
       let textData = null;
       if (unitType === 'page') {
         const size = unitSize != null ? parseFloat(unitSize) : 1;
-        if (size > 1) {
-          // Multi-page unit: fetch range from unitNumber to unitNumber + size
-          const endPage = unitNumber + size;
-          textData = await QuranAPI.fetchPageRange(unitNumber, endPage);
-        } else {
-          // Single page or fractional page (e.g. 3.5 = half of 3 + half of 4)
-          textData = await QuranAPI.fetchPageText(unitNumber);
-        }
-      } else {
-        // Fallback for other unit types
-        content.textContent = 'Units other than "Page" are coming soon to the reader.';
-        return;
+        textData = size > 1
+            ? await QuranAPI.fetchPageRange(unitNumber, unitNumber + size)
+            : await QuranAPI.fetchPageText(unitNumber);
       }
 
       if (textData && textData.data && textData.data.ayahs) {
         content.replaceChildren();
-
-        // Group by surah for better display
         let currentSurah = null;
 
         textData.data.ayahs.forEach(ayah => {
           if (currentSurah !== ayah.surah.number) {
             currentSurah = ayah.surah.number;
             const surahTitle = document.createElement('div');
-            surahTitle.style.cssText = `
-              text-align: center;
-              background-color: var(--muted-bg);
-              padding: 0.5rem;
-              margin: 1.5rem 0 1rem 0;
-              border-radius: var(--radius);
-              font-size: 1.1rem;
-              color: var(--primary-bg);
-              font-weight: bold;
-            `;
-            surahTitle.textContent = `${ayah.surah.name}`;
+            surahTitle.style.cssText = `text-align: center; background-color: var(--muted-bg); padding: 0.5rem; margin: 1.5rem 0 1rem 0; border-radius: var(--radius); font-size: 1.1rem; color: var(--primary-bg); font-weight: bold;`;
+            surahTitle.textContent = ayah.surah.name;
             content.appendChild(surahTitle);
           }
 
           const ayahSpan = document.createElement('span');
           ayahSpan.className = 'ayah-text';
-          ayahSpan.textContent = ayah.text + ' ';
 
+          // 1. Add Quranic Text
+          const textNode = document.createTextNode(ayah.text + ' ');
+          ayahSpan.appendChild(textNode);
+
+          // 2. Create a container for Number + Audio Button
+          const actionContainer = document.createElement('span');
+          actionContainer.style.cssText = `
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin: 0 8px;
+          vertical-align: middle;
+          white-space: nowrap;
+        `;
+
+          // The Ayah Number Badge
           const badge = document.createElement('span');
           badge.style.cssText = `
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.8rem;
-            height: 1.8rem;
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            font-size: 0.75rem;
-            margin: 0 0.5rem;
-            color: var(--muted-fg);
-            vertical-align: middle;
-          `;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 1.8rem;
+          height: 1.8rem;
+          border: 1px solid var(--border-color);
+          border-radius: 50%;
+          font-size: 0.75rem;
+          color: var(--muted-fg);
+        `;
           badge.textContent = ayah.numberInSurah;
 
-          ayahSpan.appendChild(badge);
+          // The Separate Play Button
+          const playBtn = document.createElement('button');
+          playBtn.innerHTML = '▶️'; // You can replace with an SVG icon if preferred
+          playBtn.style.cssText = `
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 1rem;
+          padding: 2px;
+          line-height: 1;
+          transition: transform 0.1s;
+        `;
+
+          playBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.playAyahAudio(ayah.surah.number, ayah.numberInSurah);
+          };
+
+          // Hover effect for the button
+          playBtn.onmouseenter = () => { playBtn.style.transform = 'scale(1.2)'; };
+          playBtn.onmouseleave = () => { playBtn.style.transform = 'scale(1)'; };
+
+          // Assemble: Text -> (Number + Button)
+          actionContainer.appendChild(badge);
+          actionContainer.appendChild(playBtn);
+
+          ayahSpan.appendChild(actionContainer);
           content.appendChild(ayahSpan);
         });
-
+        // Add the footer after the loop is done
         modal.appendChild(footer);
       } else {
         content.textContent = i18n.t('reading.error');
@@ -796,6 +832,7 @@ const UIComponents = {
       console.error('Error in reading modal:', error);
       content.textContent = i18n.t('reading.error');
     }
+
   },
 
   // Create a 365-day activity heatmap (Consistency Map)
