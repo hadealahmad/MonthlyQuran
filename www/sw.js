@@ -1,4 +1,4 @@
-const CACHE_NAME = 'monthlyquran-v1.5.7';
+const CACHE_NAME = 'monthlyquran-v1.6.5';
 const urlsToCache = [
   './',
   './index.html',

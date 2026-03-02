@@ -795,8 +795,8 @@
   flex-direction: row-reverse;
 }
 
-/* Responsive grid for unit-type plan selector (5 buttons) — applies to all toggle-options */
-.toggle-options {
+/* Responsive grid for unit-type plan selector (5 buttons) — only for setup-unit-type, not language/theme */
+.toggle-options:not(#setup-language-toggle):not(#setup-theme-toggle):not(#settings-language-toggle):not(#settings-theme-toggle):not(#settings-haptics-toggle) {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
 }
@@ -805,6 +805,15 @@
 .toggle-options button[data-value="juz"] {
   grid-column: 1 / -1;
   width: 100%;
+}
+
+/* Force flex layout for language and theme switches only */
+#setup-language-toggle,
+#setup-theme-toggle,
+#settings-language-toggle,
+#settings-theme-toggle,
+#settings-haptics-toggle {
+  display: flex;
 }
 
 /* Quick Stats */
