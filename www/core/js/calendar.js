@@ -228,6 +228,7 @@ const Calendar = {
 
       // Click handler
       dayEl.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.selection();
         this.selectDate(date);
       });
 
@@ -354,6 +355,7 @@ const Calendar = {
     if (!filterSelect.dataset.listenerAttached) {
       filterSelect.dataset.listenerAttached = 'true';
       filterSelect.addEventListener('change', (e) => {
+        if (typeof HapticsService !== 'undefined') HapticsService.light();
         this.selectedProgression = e.target.value;
         this.render();
       });
