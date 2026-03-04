@@ -673,3 +673,66 @@ body {
     display: none;
   }
 }
+
+/* ─── View Transitions API ─────────────────────────────────────────────────── */
+
+/* Direction token: 1 = forward (→), -1 = backward (←) */
+:root {
+  --transition-direction: 1;
+}
+
+/* Keep the bottom nav visually locked during transitions */
+#bottom-nav {
+  view-transition-name: bottom-nav;
+}
+
+/*
+ * All View-Transition rules are wrapped in @supports so that browsers without
+ * the API (e.g. older Firefox) simply ignore the block without parse errors.
+ */
+@supports (view-transition-name: none) {
+  @keyframes vt-slide-out {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateX(calc(-32px * var(--transition-direction)));
+    }
+  }
+
+  @keyframes vt-slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(calc(32px * var(--transition-direction)));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  ::view-transition-old(tab-content) {
+    animation: vt-slide-out 260ms ease-in-out both;
+  }
+
+  ::view-transition-new(tab-content) {
+    animation: vt-slide-in 260ms ease-in-out both;
+  }
+
+  /* Freeze the nav bar — no animation */
+  ::view-transition-old(bottom-nav),
+  ::view-transition-new(bottom-nav) {
+    animation: none;
+  }
+}
+
+/* Respect OS-level reduce-motion preference regardless of app setting */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*) {
+    animation-duration: 0.01ms !important;
+  }
+}

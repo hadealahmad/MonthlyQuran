@@ -52,6 +52,9 @@ const App = {
         HapticsService.init(config);
       }
 
+      // Sync transitions flag so showView() can check it synchronously
+      UI._transitionsEnabled = config.enable_transitions !== false;
+
       // Initialize tab navigation
       UI.initTabNavigation();
 
