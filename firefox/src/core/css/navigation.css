@@ -62,11 +62,6 @@
   font-family: 'IBM Plex Sans Arabic', sans-serif;
 }
 
-/* Ensure main content has padding for bottom nav */
-.view:not(.hidden) ~ .bottom-nav {
-  display: flex;
-}
-
 /* RTL Support - Keep original order */
 [dir="rtl"] .bottom-nav {
   direction: ltr;

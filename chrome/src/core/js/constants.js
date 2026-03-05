@@ -11,7 +11,7 @@ const DEFAULT_CONFIG = {
   THEME: 'light',
   LANGUAGE: 'ar',
   PROGRESSION_NAME: '',
-  ENABLE_HAPTICS: true
+  ENABLE_TRANSITIONS: true
 };
 
 /**
@@ -111,6 +111,16 @@ const VIEWS = {
   CREDITS: 'credits-view'
 };
 /**
+ * Ordered list of main view IDs — used to determine slide direction
+ */
+const VIEW_ORDER = [
+  'today-view',
+  'progress-view',
+  'calendar-view',
+  'settings-view',
+  'credits-view'
+];
+/**
  * Backlog feature constants
  */
 const BACKLOG_SPREAD_OPTIONS = [3, 5, 7];
@@ -129,6 +139,7 @@ window.THEMES = THEMES;
 window.LANGUAGES = LANGUAGES;
 window.ITEM_STATUS = ITEM_STATUS;
 window.VIEWS = VIEWS;
+window.VIEW_ORDER = VIEW_ORDER;
 window.BACKLOG_SPREAD_OPTIONS = BACKLOG_SPREAD_OPTIONS;
 window.BACKLOG_DAILY_CAPACITY = BACKLOG_DAILY_CAPACITY;
 window.BACKLOG_OVERDUE_THRESHOLD_DAYS = BACKLOG_OVERDUE_THRESHOLD_DAYS;
