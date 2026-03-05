@@ -890,13 +890,83 @@ const UI = {
       }
     });
 
+    // Inject backlog tasks for real today (check actual date, not how function was called)
+    const isRealToday = target.getTime() === normalizedToday.getTime();
+    let backlogQueue = null;
+    let cachedOverdueItems = null;
+    if (isRealToday) {
+      backlogQueue = await Storage.getBacklogQueue();
+      // Always detect overdue items (needed for banner and for showing new ones)
+      cachedOverdueItems = Backlog.detectOverdueReviews(allItems, dateStr);
+
+      if (backlogQueue) {
+        // Active queue exists — inject scheduled catch-up tasks for today
+        const catchupTasks = Backlog.getTasksForDate(backlogQueue, dateStr, allItems);
+        for (const catchupTask of catchupTasks) {
+          const taskKey = `${catchupTask.item.id}-${catchupTask.station}-${dateStr}`;
+          if (!uniqueTasksMap.has(taskKey)) {
+            uniqueTasksMap.set(taskKey, {
+              item: { ...catchupTask.item, dueStation: catchupTask.station },
+              priority: PRIORITY.CATCHUP,
+              station: catchupTask.station,
+              isCatchup: true,
+              originalDueDate: catchupTask.originalDueDate
+            });
+          }
+        }
+
+        // Also inject overdue items NOT already covered by the queue
+        // Only count pending items with today or future dates (stale/completed items shouldn't block)
+        const queuedKeys = new Set(
+          backlogQueue.items
+            .filter(e => e.status === 'pending' && e.rescheduled_date >= dateStr)
+            .map(e => `${e.item_id}-${e.station}`)
+        );
+        for (const entry of cachedOverdueItems) {
+          if (queuedKeys.has(`${entry.item_id}-${entry.station}`)) continue;
+          const item = allItems.find(i => i.id === entry.item_id);
+          if (!item) continue;
+          const taskKey = `${item.id}-${entry.station}-${dateStr}`;
+          if (!uniqueTasksMap.has(taskKey)) {
+            uniqueTasksMap.set(taskKey, {
+              item: { ...item, dueStation: entry.station },
+              priority: PRIORITY.CATCHUP,
+              station: entry.station,
+              isOverdue: true,
+              daysOverdue: entry.days_overdue,
+              originalDueDate: entry.original_due_date
+            });
+          }
+        }
+      } else {
+        // No queue — show all overdue tasks directly in today's list
+        for (const entry of cachedOverdueItems) {
+          const item = allItems.find(i => i.id === entry.item_id);
+          if (!item) continue;
+          const taskKey = `${item.id}-${entry.station}-${dateStr}`;
+          if (!uniqueTasksMap.has(taskKey)) {
+            uniqueTasksMap.set(taskKey, {
+              item: { ...item, dueStation: entry.station },
+              priority: PRIORITY.CATCHUP,
+              station: entry.station,
+              isOverdue: true,
+              daysOverdue: entry.days_overdue,
+              originalDueDate: entry.original_due_date
+            });
+          }
+        }
+      }
+    }
+
     // Convert back to array
     const uniqueTasks = Array.from(uniqueTasksMap.values());
 
     // Mark tasks as completed or not
     for (const task of uniqueTasks) {
       const station = task.station || (window.STATIONS ? window.STATIONS.STATION_1 : 1);
-      task.isCompleted = await Storage.isReviewCompleted(task.item.id, station, dateStr);
+      // Overdue and catch-up tasks use original due date as the review key
+      const reviewDate = (task.isOverdue || task.isCatchup) && task.originalDueDate ? task.originalDueDate : dateStr;
+      task.isCompleted = await Storage.isReviewCompleted(task.item.id, station, reviewDate);
     }
 
     // Sort: unchecked first (by priority, then content), then checked (by priority, then content)
@@ -931,6 +1001,11 @@ const UI = {
       statsContainer.appendChild(fragment);
     }
 
+    // Render backlog banner or progress bar (only for real today)
+    if (isRealToday) {
+      await this._renderBacklogUI(dateStr, backlogQueue, cachedOverdueItems);
+    }
+
     // Render unified task list
     const tasksContainer = DOMCache.getElementById('today-tasks');
     if (tasksContainer) {
@@ -944,8 +1019,8 @@ const UI = {
         const empty = UIComponents.createEmptyState(i18n.t('dashboard.noItems'));
         fragment.appendChild(empty);
       } else {
-        uniqueTasks.forEach(({ item, priority, station, isCompleted }) => {
-          const taskCard = UIComponents.createTaskCard(item, station, priority, isCompleted, config.unit_type, config.unit_size, config);
+        uniqueTasks.forEach(({ item, priority, station, isCompleted, isCatchup, isOverdue, originalDueDate }) => {
+          const taskCard = UIComponents.createTaskCard(item, station, priority, isCompleted, config.unit_type, config.unit_size, config, isCatchup || false, isOverdue || false, originalDueDate || null);
           fragment.appendChild(taskCard);
         });
       }
@@ -975,6 +1050,183 @@ const UI = {
 
       await this.createOrUpdateItem(unitType, itemNumber, itemDateStr, config, allItems);
     }
+  },
+
+  // --- Backlog UI Methods ---
+
+  async _renderBacklogUI(todayStr, queue, overdueItems) {
+    // Remove any existing backlog UI
+    const existingBanner = document.getElementById('backlog-banner');
+    if (existingBanner) existingBanner.remove();
+
+    // Active queue exists — show progress bar
+    if (queue) {
+      const prunedQueue = Backlog.pruneQueue(queue, todayStr);
+      if (prunedQueue.items.length > 0) {
+        await Storage.saveBacklogQueue(prunedQueue);
+        this._renderBacklogProgressBar(prunedQueue);
+        return;
+      } else {
+        await Storage.clearBacklogQueue();
+      }
+    }
+
+    // No queue — show reschedule banner only if items are overdue beyond threshold
+    if (!overdueItems || overdueItems.length === 0) return;
+    const thresholdItems = overdueItems.filter(e => e.days_overdue >= BACKLOG_OVERDUE_THRESHOLD_DAYS);
+    if (thresholdItems.length === 0) return;
+
+    const banner = this._createBacklogBanner(overdueItems.length, () => {
+      this._showBacklogDialog(overdueItems, todayStr);
+    });
+
+    const statsContainer = DOMCache.getElementById('today-stats');
+    const tasksContainer = DOMCache.getElementById('today-tasks');
+    if (statsContainer && tasksContainer) {
+      statsContainer.parentNode.insertBefore(banner, tasksContainer);
+    }
+  },
+
+  _createBacklogBanner(overdueCount, onClickReschedule) {
+    const banner = document.createElement('div');
+    banner.id = 'backlog-banner';
+    banner.className = 'backlog-banner';
+
+    const textDiv = document.createElement('div');
+
+    const title = document.createElement('div');
+    title.className = 'backlog-banner-title';
+    title.textContent = i18n.t('backlog.bannerTitle');
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'backlog-banner-subtitle';
+    subtitle.textContent = i18n.t('backlog.bannerSubtitle', { count: overdueCount });
+
+    textDiv.appendChild(title);
+    textDiv.appendChild(subtitle);
+    banner.appendChild(textDiv);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-primary';
+    btn.textContent = i18n.t('backlog.bannerButton');
+    btn.addEventListener('click', onClickReschedule);
+    banner.appendChild(btn);
+
+    return banner;
+  },
+
+  _renderBacklogProgressBar(queue) {
+    const stats = Backlog.getQueueStats(queue);
+    const percent = stats.total > 0
+      ? Math.round(((stats.total - stats.remaining) / stats.total) * 100)
+      : 100;
+
+    const bar = document.createElement('div');
+    bar.id = 'backlog-banner';
+    bar.className = 'backlog-progress-banner';
+
+    const label = document.createElement('div');
+    label.className = 'backlog-progress-label';
+    label.textContent = i18n.t('backlog.progressLabel', {
+      remaining: stats.remaining,
+      total: stats.total
+    });
+
+    const track = document.createElement('div');
+    track.className = 'backlog-progress-track';
+    const fill = document.createElement('div');
+    fill.className = 'backlog-progress-fill';
+    fill.style.width = `${percent}%`;
+    track.appendChild(fill);
+
+    bar.appendChild(label);
+    bar.appendChild(track);
+
+    const statsContainer = DOMCache.getElementById('today-stats');
+    const tasksContainer = DOMCache.getElementById('today-tasks');
+    if (statsContainer && tasksContainer) {
+      statsContainer.parentNode.insertBefore(bar, tasksContainer);
+    }
+  },
+
+  _showBacklogDialog(overdueItems, todayStr) {
+    const overlay = document.createElement('div');
+    overlay.className = 'dialog-overlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem;';
+
+    const dialog = document.createElement('div');
+    dialog.className = 'dialog';
+    dialog.style.cssText = 'background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 1.5rem; max-width: 28rem; width: 100%; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);';
+
+    // Title
+    const title = document.createElement('h3');
+    title.style.cssText = 'font-size: 1.25rem; font-weight: 600; margin: 0 0 0.5rem 0; color: var(--fg);';
+    title.textContent = i18n.t('backlog.dialogTitle');
+    dialog.appendChild(title);
+
+    // Description
+    const desc = document.createElement('p');
+    desc.style.cssText = 'font-size: 0.875rem; color: var(--muted-fg); margin: 0 0 1.5rem 0; line-height: 1.6;';
+    desc.textContent = i18n.t('backlog.dialogDesc', {
+      count: overdueItems.length,
+      capacity: BACKLOG_DAILY_CAPACITY
+    });
+    dialog.appendChild(desc);
+
+    // Spread options label
+    const optionsLabel = document.createElement('div');
+    optionsLabel.style.cssText = 'font-size: 0.875rem; font-weight: 500; margin-bottom: 0.75rem; color: var(--fg);';
+    optionsLabel.textContent = i18n.t('backlog.spreadLabel');
+    dialog.appendChild(optionsLabel);
+
+    // Toggle options
+    let selectedSpread = BACKLOG_SPREAD_OPTIONS[1]; // default 5 days
+    const toggleGroup = document.createElement('div');
+    toggleGroup.className = 'toggle-options';
+    toggleGroup.style.cssText = 'margin-bottom: 1.5rem;';
+
+    BACKLOG_SPREAD_OPTIONS.forEach(days => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `toggle-option ${days === selectedSpread ? 'active' : ''}`;
+      btn.setAttribute('data-value', days);
+      btn.textContent = i18n.t('backlog.spreadOption', { days });
+      btn.addEventListener('click', () => {
+        toggleGroup.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedSpread = days;
+      });
+      toggleGroup.appendChild(btn);
+    });
+    dialog.appendChild(toggleGroup);
+
+    // Buttons
+    const buttons = document.createElement('div');
+    buttons.style.cssText = 'display: flex; flex-direction: column; gap: 0.75rem;';
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'btn btn-primary btn-full';
+    confirmBtn.textContent = i18n.t('backlog.confirmButton');
+    confirmBtn.addEventListener('click', async () => {
+      overlay.remove();
+      const queue = Backlog.buildQueue(overdueItems, todayStr, selectedSpread);
+      await Storage.saveBacklogQueue(queue);
+      Algorithm.clearScheduleCache();
+      await this.renderTodayView(this.currentDate);
+    });
+    buttons.appendChild(confirmBtn);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-ghost btn-full';
+    cancelBtn.textContent = i18n.t('common.cancel');
+    cancelBtn.addEventListener('click', () => overlay.remove());
+    buttons.appendChild(cancelBtn);
+
+    dialog.appendChild(buttons);
+    overlay.appendChild(dialog);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    confirmBtn.focus();
   },
 
   // Render progress view (timeline)

@@ -20,7 +20,8 @@ const DEFAULT_CONFIG = {
 const PRIORITY = {
   NEW: 1,
   YESTERDAY: 2,
-  SPACED: 3
+  SPACED: 3,
+  CATCHUP: 4
 };
 
 /**
@@ -119,6 +120,13 @@ const VIEW_ORDER = [
   'settings-view',
   'credits-view'
 ];
+/**
+ * Backlog feature constants
+ */
+const BACKLOG_SPREAD_OPTIONS = [3, 5, 7];
+const BACKLOG_DAILY_CAPACITY = 5;
+const BACKLOG_OVERDUE_THRESHOLD_DAYS = 2;
+const BACKLOG_STATION_PRIORITY = { 3: 1, 4: 2, 5: 3, 6: 4, 7: 5 };
 
 // Expose to window for use in other modules
 window.DEFAULT_CONFIG = DEFAULT_CONFIG;
@@ -132,3 +140,7 @@ window.LANGUAGES = LANGUAGES;
 window.ITEM_STATUS = ITEM_STATUS;
 window.VIEWS = VIEWS;
 window.VIEW_ORDER = VIEW_ORDER;
+window.BACKLOG_SPREAD_OPTIONS = BACKLOG_SPREAD_OPTIONS;
+window.BACKLOG_DAILY_CAPACITY = BACKLOG_DAILY_CAPACITY;
+window.BACKLOG_OVERDUE_THRESHOLD_DAYS = BACKLOG_OVERDUE_THRESHOLD_DAYS;
+window.BACKLOG_STATION_PRIORITY = BACKLOG_STATION_PRIORITY;

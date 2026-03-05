@@ -167,6 +167,19 @@ const translations = {
       on: 'On',
       off: 'Off'
     },
+    backlog: {
+      bannerTitle: 'Feeling Overwhelmed?',
+      bannerSubtitle: '{{count}} overdue review(s) detected. Reschedule your backlog.',
+      bannerButton: 'Reschedule',
+      dialogTitle: 'Reschedule Missed Reviews',
+      dialogDesc: 'You have {{count}} overdue review(s). They will be spread over your chosen period (max {{capacity}} per day), prioritizing earlier stations.',
+      spreadLabel: 'Spread over:',
+      spreadOption: '{{days}} days',
+      confirmButton: 'Schedule Catch-up',
+      catchupBadge: 'Catch-up',
+      overdueBadge: 'Overdue',
+      progressLabel: '{{remaining}} of {{total}} catch-up tasks remaining'
+    },
     aria: {
       toggleLanguage: 'Toggle language',
       toggleTheme: 'Toggle theme',
@@ -383,6 +396,19 @@ const translations = {
       resetConfirm: 'هل أنت متأكد من إعادة تعيين التطبيق؟ سيؤدي هذا إلى حذف جميع بياناتك ولا يمكن التراجع عنه.',
       on: 'تشغيل',
       off: 'إيقاف'
+    },
+    backlog: {
+      bannerTitle: 'تشعر بالإرهاق؟',
+      bannerSubtitle: 'تم اكتشاف {{count}} مراجعة متأخرة. أعد جدولة التراكم.',
+      bannerButton: 'إعادة الجدولة',
+      dialogTitle: 'إعادة جدولة المراجعات الفائتة',
+      dialogDesc: 'لديك {{count}} مراجعة متأخرة. سيتم توزيعها على الفترة المختارة (بحد أقصى {{capacity}} يوميًا)، مع إعطاء الأولوية للمحطات الأولى.',
+      spreadLabel: 'التوزيع على:',
+      spreadOption: '{{days}} أيام',
+      confirmButton: 'جدولة المراجعات التعويضية',
+      catchupBadge: 'تعويضي',
+      overdueBadge: 'متأخر',
+      progressLabel: 'متبقي {{remaining}} من {{total}} مهام تعويضية'
     },
     aria: {
       toggleLanguage: 'تبديل اللغة',

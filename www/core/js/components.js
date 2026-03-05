@@ -16,7 +16,7 @@ const UIComponents = {
   },
 
   // Create a task card with priority badge
-  createTaskCard(item, stationNumber = null, priority = 1, isCompleted = false, unitType = 'page', unitSize = null, config = null) {
+  createTaskCard(item, stationNumber = null, priority = 1, isCompleted = false, unitType = 'page', unitSize = null, config = null, isCatchup = false, isOverdue = false, originalDueDate = null) {
     const card = document.createElement('div');
     card.className = 'schedule-item';
     card.dataset.itemId = item.id;
@@ -75,25 +75,33 @@ const UIComponents = {
     const meta = document.createElement('div');
     meta.className = 'schedule-item-meta';
 
-    // Priority badge
+    // Priority / type badge
     const badge = document.createElement('span');
-    let priorityClass = 'priority-spaced';
-    let priorityText = i18n.t('today.prioritySpaced');
 
-    // Use priority constants safely (fall back to numeric values if global object missing)
-    const PRIORITY_NEW = (window.PRIORITY && window.PRIORITY.NEW) || 1;
-    const PRIORITY_YESTERDAY = (window.PRIORITY && window.PRIORITY.YESTERDAY) || 2;
+    if (isOverdue) {
+      badge.className = 'priority-badge priority-overdue';
+      badge.textContent = i18n.t('backlog.overdueBadge');
+    } else if (isCatchup) {
+      badge.className = 'priority-badge priority-catchup';
+      badge.textContent = i18n.t('backlog.catchupBadge');
+    } else {
+      let priorityClass = 'priority-spaced';
+      let priorityText = i18n.t('today.prioritySpaced');
 
-    if (priority === PRIORITY_NEW) {
-      priorityClass = 'priority-new';
-      priorityText = i18n.t('today.priorityNew');
-    } else if (priority === PRIORITY_YESTERDAY) {
-      priorityClass = 'priority-yesterday';
-      priorityText = i18n.t('today.priorityYesterday');
+      const PRIORITY_NEW = (window.PRIORITY && window.PRIORITY.NEW) || 1;
+      const PRIORITY_YESTERDAY = (window.PRIORITY && window.PRIORITY.YESTERDAY) || 2;
+
+      if (priority === PRIORITY_NEW) {
+        priorityClass = 'priority-new';
+        priorityText = i18n.t('today.priorityNew');
+      } else if (priority === PRIORITY_YESTERDAY) {
+        priorityClass = 'priority-yesterday';
+        priorityText = i18n.t('today.priorityYesterday');
+      }
+
+      badge.className = `priority-badge ${priorityClass}`;
+      badge.textContent = priorityText;
     }
-
-    badge.className = `priority-badge ${priorityClass}`;
-    badge.textContent = priorityText;
     meta.appendChild(badge);
 
     // Station label
@@ -142,7 +150,9 @@ const UIComponents = {
         ? DateUtils.getLocalDateString(uiDate)
         : uiDate.toISOString().split('T')[0];
       const station = stationNumber || 1;
-      const currentlyCompleted = await Storage.isReviewCompleted(item.id, station, currentDateStr);
+      // For overdue/catch-up tasks, check completion against the original due date
+      const checkDate = (isOverdue || isCatchup) && originalDueDate ? originalDueDate : currentDateStr;
+      const currentlyCompleted = await Storage.isReviewCompleted(item.id, station, checkDate);
 
       // Add appropriate animation class
       if (currentlyCompleted) {
@@ -153,10 +163,24 @@ const UIComponents = {
 
       // Wait for animation to complete
       setTimeout(async () => {
+        // For overdue/catch-up tasks, use the original due date as the review key
+        // so detectOverdueReviews properly recognizes it as completed
+        const reviewDate = (isOverdue || isCatchup) && originalDueDate ? originalDueDate : currentDateStr;
+
         if (currentlyCompleted) {
-          await Storage.unmarkReviewComplete(item.id, station, currentDateStr);
+          if (typeof HapticsService !== 'undefined') HapticsService.light();
+          await Storage.unmarkReviewComplete(item.id, station, reviewDate);
+          if (isCatchup) {
+            await Storage.unmarkBacklogItemComplete(item.id, station, currentDateStr);
+            Algorithm.clearScheduleCache();
+          }
         } else {
-          await Storage.markReviewComplete(item.id, station, currentDateStr);
+          if (typeof HapticsService !== 'undefined') HapticsService.success();
+          await Storage.markReviewComplete(item.id, station, reviewDate);
+          if (isCatchup) {
+            await Storage.markBacklogItemComplete(item.id, station, currentDateStr);
+            Algorithm.clearScheduleCache();
+          }
         }
 
         // Re-render the view, preserving the current date context
@@ -633,15 +657,14 @@ const UIComponents = {
 
     // Content area
     const content = document.createElement('div');
-    content.className = 'reading-content';
+    content.className = 'reading-content mushaf-page';
     content.style.cssText = `
       flex: 1;
       overflow-y: auto;
-      padding: 1.5rem;
-      direction: rtl; /* Quran text is always RTL */
-      line-height: 2.2;
-      font-size: 1.35rem;
-      font-family: 'Amiri', serif;
+      overflow-x: hidden;
+      padding: 1.5rem 1.25rem 1rem;
+      direction: rtl;
+      background-color: var(--bg);
       color: var(--fg);
     `;
 
@@ -715,51 +738,115 @@ const UIComponents = {
       if (textData && textData.data && textData.data.ayahs) {
         content.replaceChildren();
 
-        // Group by surah for better display
+        // Helper: Western digits → Arabic-Indic numerals
+        const toArabicNumerals = (n) =>
+          String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+        // Mushaf page wrapper
+        const pageWrap = document.createElement('div');
+        pageWrap.style.cssText = `
+          font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', serif;
+          font-size: 1.25rem;
+          line-height: 2.2;
+          text-align: justify;
+          color: var(--fg);
+          overflow-wrap: break-word;
+          word-break: break-word;
+        `;
+
         let currentSurah = null;
+        let currentBlock = null;
+
+        const flushBlock = () => {
+          if (currentBlock) { pageWrap.appendChild(currentBlock); currentBlock = null; }
+        };
 
         textData.data.ayahs.forEach(ayah => {
+          // New surah
           if (currentSurah !== ayah.surah.number) {
+            flushBlock();
             currentSurah = ayah.surah.number;
-            const surahTitle = document.createElement('div');
-            surahTitle.style.cssText = `
+
+            // Surah name banner
+            const surahBanner = document.createElement('div');
+            surahBanner.style.cssText = `
               text-align: center;
-              background-color: var(--muted-bg);
-              padding: 0.5rem;
-              margin: 1.5rem 0 1rem 0;
-              border-radius: var(--radius);
-              font-size: 1.1rem;
-              color: var(--primary-bg);
+              margin: 1.25rem 0 0.75rem;
+              padding: 0.5rem 1rem;
+              border-top: 1px solid var(--border-color);
+              border-bottom: 1px solid var(--border-color);
+              font-family: 'Amiri Quran', 'Amiri', serif;
+              font-size: 1.3rem;
               font-weight: bold;
+              color: var(--fg);
             `;
-            surahTitle.textContent = `${ayah.surah.name}`;
-            content.appendChild(surahTitle);
+            surahBanner.textContent = ayah.surah.name;
+            pageWrap.appendChild(surahBanner);
+
+            // Bismillah — skip At-Tawbah (9) and Al-Fatiha first ayah (included in text)
+            if (ayah.surah.number !== 9 && !(ayah.surah.number === 1 && ayah.numberInSurah === 1)) {
+              const bismillah = document.createElement('div');
+              bismillah.style.cssText = `
+                text-align: center;
+                font-family: 'Amiri Quran', 'Amiri', serif;
+                font-size: 1.3rem;
+                margin-bottom: 0.75rem;
+                color: var(--fg);
+              `;
+              bismillah.textContent = '\u0628\u0650\u0633\u0652\u0645\u0650 \u0671\u0644\u0644\u0651\u064E\u0647\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0650\u06CC\u0645\u0650';
+              pageWrap.appendChild(bismillah);
+            }
+
+            currentBlock = document.createElement('div');
+            currentBlock.style.cssText = 'text-align: justify; text-align-last: center;';
           }
 
-          const ayahSpan = document.createElement('span');
-          ayahSpan.className = 'ayah-text';
-          ayahSpan.textContent = ayah.text + ' ';
+          // Ayah text
+          currentBlock.appendChild(document.createTextNode(ayah.text + ' '));
 
-          const badge = document.createElement('span');
-          badge.style.cssText = `
+          // Ayah end marker: green circle with number (like Uthmani mushaf)
+          const marker = document.createElement('span');
+          marker.style.cssText = `
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 1.8rem;
-            height: 1.8rem;
-            border: 1px solid var(--border-color);
+            width: 1.6rem;
+            height: 1.6rem;
             border-radius: 50%;
-            font-size: 0.75rem;
-            margin: 0 0.5rem;
-            color: var(--muted-fg);
+            border: 1.5px solid var(--success-bg);
+            font-family: sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--success-bg);
             vertical-align: middle;
+            margin: 0 0.15em;
+            white-space: nowrap;
           `;
-          badge.textContent = ayah.numberInSurah;
-
-          ayahSpan.appendChild(badge);
-          content.appendChild(ayahSpan);
+          marker.textContent = toArabicNumerals(ayah.numberInSurah);
+          currentBlock.appendChild(marker);
+          currentBlock.appendChild(document.createTextNode(' '));
         });
 
+        flushBlock();
+
+        // Page number footer
+        const pageFooter = document.createElement('div');
+        pageFooter.style.cssText = `
+          text-align: center;
+          margin-top: 1.5rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid var(--border-color);
+          font-family: 'Amiri Quran', 'Amiri', serif;
+          font-size: 0.95rem;
+          color: var(--muted-fg);
+        `;
+        const displayPage = unitSize && parseFloat(unitSize) > 1
+          ? toArabicNumerals(unitNumber) + ' \u2013 ' + toArabicNumerals(Math.floor(unitNumber + parseFloat(unitSize) - 1))
+          : toArabicNumerals(unitNumber);
+        pageFooter.textContent = displayPage;
+        pageWrap.appendChild(pageFooter);
+
+        content.appendChild(pageWrap);
         modal.appendChild(footer);
       } else {
         content.textContent = i18n.t('reading.error');
