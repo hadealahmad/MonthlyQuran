@@ -11,7 +11,8 @@ const DEFAULT_CONFIG = {
   THEME: 'light',
   LANGUAGE: 'ar',
   PROGRESSION_NAME: '',
-  ENABLE_TRANSITIONS: true
+  ENABLE_TRANSITIONS: true,
+  ENABLE_HAPTICS: true
 };
 
 /**

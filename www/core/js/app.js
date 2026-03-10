@@ -47,6 +47,9 @@ const App = {
       // Initialize with saved config
       i18n.init(config.language);
       await Theme.init();
+      if (typeof HapticsService !== 'undefined') {
+        HapticsService.init(config);
+      }
 
       // Initialize tab navigation
       UI.initTabNavigation();

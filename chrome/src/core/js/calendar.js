@@ -375,6 +375,7 @@ const Calendar = {
 
   // Navigate to previous month
   async prevMonth() {
+    if (typeof HapticsService !== 'undefined') HapticsService.light();
     this.currentMonth--;
     if (this.currentMonth < 0) {
       this.currentMonth = 11;
@@ -385,6 +386,7 @@ const Calendar = {
 
   // Navigate to next month
   async nextMonth() {
+    if (typeof HapticsService !== 'undefined') HapticsService.light();
     this.currentMonth++;
     if (this.currentMonth > 11) {
       this.currentMonth = 0;

@@ -33,6 +33,9 @@ const Storage = {
         enable_transitions: config.enable_transitions !== undefined
           ? config.enable_transitions
           : DEFAULT_CONFIG.ENABLE_TRANSITIONS,
+        enable_haptics: config.enable_haptics !== undefined
+          ? config.enable_haptics
+          : DEFAULT_CONFIG.ENABLE_HAPTICS,
         updated_at: new Date().toISOString()
       };
       await StorageAdapter.set(STORAGE_KEYS.CONFIG, JSON.stringify(configData));

@@ -189,6 +189,7 @@ const UI = {
     bottomNav.addEventListener('click', async (e) => {
       const tab = e.target.closest('.nav-tab');
       if (!tab) return;
+      if (typeof HapticsService !== 'undefined') HapticsService.selection();
 
       const viewId = tab.getAttribute('data-view');
       if (viewId) {
@@ -1472,6 +1473,23 @@ const UI = {
       });
     }
 
+    // Initialize haptics toggle
+    const hapticsToggle = DOMCache.getElementById('settings-haptics-toggle');
+    if (hapticsToggle) {
+      const selectedValue = String(
+        config.enable_haptics !== undefined
+          ? config.enable_haptics
+          : DEFAULT_CONFIG.ENABLE_HAPTICS
+      );
+      hapticsToggle.querySelectorAll('.toggle-option').forEach(btn => {
+        if (btn.getAttribute('data-value') === selectedValue) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
     // Set time inputs
     const morningHourInput = DOMCache.getElementById('settings-morning-hour');
     const eveningHourInput = DOMCache.getElementById('settings-evening-hour');
@@ -1546,6 +1564,27 @@ const UI = {
           if (config) {
             config.enable_transitions = value;
             await Storage.saveConfig(config);
+          }
+        });
+      });
+    }
+
+    // Haptics toggle
+    const hapticsToggle = DOMCache.getElementById('settings-haptics-toggle');
+    if (hapticsToggle) {
+      hapticsToggle.querySelectorAll('.toggle-option').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const value = btn.getAttribute('data-value') === 'true';
+          hapticsToggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          const config = await Storage.getConfig();
+          if (config) {
+            config.enable_haptics = value;
+            await Storage.saveConfig(config);
+            if (typeof HapticsService !== 'undefined') {
+              HapticsService.init(config);
+            }
           }
         });
       });
