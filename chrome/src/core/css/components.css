@@ -1216,9 +1216,11 @@
     width: 10px;
     height: 10px;
   }
+
   .consistency-map-grid {
     grid-template-columns: auto repeat(53, 10px);
     grid-template-rows: auto repeat(7, 10px);
     gap: 2px;
   }
+}
 }

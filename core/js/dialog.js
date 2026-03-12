@@ -15,7 +15,6 @@ const Dialog = {
   // Show delete choice dialog
   showDeleteChoice(itemReference, onDeleteOne, onDeleteAll) {
     if (typeof HapticsService !== 'undefined') HapticsService.selection();
-
     // Create modal overlay
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
@@ -117,7 +116,6 @@ const Dialog = {
   // Show reset confirmation dialog
   showResetConfirm(onConfirm) {
     if (typeof HapticsService !== 'undefined') HapticsService.selection();
-
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
     overlay.style.cssText = `
@@ -198,7 +196,6 @@ const Dialog = {
   // Show import confirmation dialog
   showImportConfirm(onConfirm) {
     if (typeof HapticsService !== 'undefined') HapticsService.selection();
-
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
     overlay.style.cssText = `
@@ -279,7 +276,6 @@ const Dialog = {
   // Show add memorization modal (similar to setup wizard but without theme/language)
   async showAddMemorizationModal(onSubmit) {
     if (typeof HapticsService !== 'undefined') HapticsService.selection();
-
     const overlay = document.createElement('div');
     overlay.className = 'dialog-overlay';
     overlay.style.cssText = `
@@ -634,7 +630,6 @@ const Dialog = {
   // Show PWA install prompt (bottom-stuck banner)
   showInstallPrompt(deferredPrompt) {
     if (typeof HapticsService !== 'undefined') HapticsService.selection();
-
     // Check if already shown
     if (Storage.hasInstallPromptBeenShown()) {
       return;
@@ -755,7 +750,6 @@ const Dialog = {
   // Show Shadcn Alert
   showShadcnAlert: function (titleText, messageText, onConfirm, onCancel, confirmText, cancelText, variant) {
     if (typeof HapticsService !== 'undefined') HapticsService.selection();
-
     if (!confirmText) confirmText = i18n.t('common.confirm');
     if (!cancelText) cancelText = i18n.t('common.cancel');
     if (!variant) variant = 'default';

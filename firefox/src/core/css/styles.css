@@ -44,6 +44,93 @@ body {
   display: none !important;
 }
 
+@supports (view-transition-name: none) {
+
+  .view:not(.hidden) {
+    view-transition-name: view-panel;
+  }
+
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+
+
+  :root[style*="--slide-direction: forward"] ::view-transition-old(view-panel) {
+    animation: slide-out-to-left 0.3s ease-in-out both;
+  }
+  :root[style*="--slide-direction: forward"] ::view-transition-new(view-panel) {
+    animation: slide-in-from-right 0.3s ease-in-out both;
+  }
+
+  :root[style*="--slide-direction: backward"] ::view-transition-old(view-panel) {
+    animation: slide-out-to-right 0.3s ease-in-out both;
+  }
+  :root[style*="--slide-direction: backward"] ::view-transition-new(view-panel) {
+    animation: slide-in-from-left 0.3s ease-in-out both;
+  }
+
+  :root[style*="--slide-direction: none"] ::view-transition-old(view-panel),
+  :root[style*="--slide-direction: none"] ::view-transition-new(view-panel) {
+    animation: none;
+  }
+
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root),
+    ::view-transition-old(view-panel),
+    ::view-transition-new(view-panel) {
+      animation: none !important;
+    }
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-to-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-to-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
 /* Container */
 .container {
   width: 100%;
