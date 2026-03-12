@@ -1583,7 +1583,8 @@ const UI = {
             config.enable_haptics = value;
             await Storage.saveConfig(config);
             if (typeof HapticsService !== 'undefined') {
-              HapticsService.init(config);
+              HapticsService.updateConfig(value);
+              HapticsService.selection(); // Provide immediate small feedback when interacting
             }
           }
         });
