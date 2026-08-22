@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  extensions:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,6 +34,96 @@ jobs:
       - name: Build Extensions
         run: npm run build:extensions
 
+      - name: Upload Extension Bundles
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-bundles
+          path: |
+            build/chrome-*.zip
+            build/firefox-*.zip
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Version Sync + Core Sync (+ plugin patches)
+        run: npm run sync
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Build Release AAB (unsigned)
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Sign Release Bundle
+        id: sign
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ No ANDROID_KEYSTORE_BASE64 secret set — uploading UNSIGNED bundle."
+            exit 0
+          fi
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/release.keystore
+          VERSION=$(node -p "require('./package.json').version")
+          cp android/app/build/outputs/bundle/release/app-release.aab "/tmp/app-release-${VERSION}.aab"
+          jarsigner -keystore /tmp/release.keystore \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "${KEY_PASSWORD:-$KEYSTORE_PASSWORD}" \
+            -sigalg SHA256withRSA -digestalg SHA-256 \
+            "/tmp/app-release-${VERSION}.aab" "${KEY_ALIAS:-key0}"
+          rm /tmp/release.keystore
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            /tmp/app-release-*.aab
+
+  release:
+    needs: [extensions, android]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Extension Bundles
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-bundles
+          path: dist
+
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-build
+          path: dist/android
+
       - name: Get Version
         id: version
         run: |
@@ -47,7 +137,8 @@ jobs:
           name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: |
-            build/chrome-${{ steps.version.outputs.version }}.zip
-            build/firefox-${{ steps.version.outputs.version }}.zip
+            dist/chrome-${{ steps.version.outputs.version }}.zip
+            dist/firefox-${{ steps.version.outputs.version }}.zip
+            dist/android/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

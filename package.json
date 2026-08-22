@@ -2,7 +2,6 @@
   "name": "monthlyquran",
   "version": "1.6.5",
   "description": "A simple web application for tracking Quran memorization using a spaced repetition system. The app helps you follow a 7-station review schedule based on memory retention principles.",
-  "main": "sw.js",
   "directories": {
     "doc": "docs"
   },
@@ -24,7 +23,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/hadealahmad/MonthlyQuran/issues"
@@ -42,5 +41,6 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5"
-  }
+  },
+  "test": "node scripts/test-storage-migration.js"
 }

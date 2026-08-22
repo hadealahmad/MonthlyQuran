@@ -150,7 +150,7 @@ const Storage = {
       const item = await this.getItemById(itemId);
       if (!item) return false;
 
-      const reviewDate = date || (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      const reviewDate = date || DateUtils.getLocalDateString(new Date());
 
       if (!item.reviews_completed) {
         item.reviews_completed = [];
@@ -187,7 +187,7 @@ const Storage = {
       const item = await this.getItemById(itemId);
       if (!item) return false;
 
-      const reviewDate = date || (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      const reviewDate = date || DateUtils.getLocalDateString(new Date());
       const reviewKey = `${stationNumber}-${reviewDate}`;
 
       if (!item.reviews_completed) {
@@ -217,7 +217,7 @@ const Storage = {
       const item = await this.getItemById(itemId);
       if (!item) return false;
 
-      const reviewDate = date || (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      const reviewDate = date || DateUtils.getLocalDateString(new Date());
 
       if (!item.reviews_completed) {
         item.reviews_completed = [];
@@ -249,7 +249,7 @@ const Storage = {
     const item = await this.getItemById(itemId);
     if (!item || !item.reviews_completed) return false;
 
-    const reviewDate = date || new Date().toISOString().split('T')[0];
+    const reviewDate = date || DateUtils.getLocalDateString(new Date());
     const reviewKey = `${stationNumber}-${reviewDate}`;
     return item.reviews_completed.includes(reviewKey);
   },

@@ -33,7 +33,14 @@
   },
   "permissions": [
     "storage",
+    "alarms",
+    "notifications",
     "https://api.alquran.cloud/*"
   ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
   "default_locale": "en"
 }

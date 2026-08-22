@@ -23,8 +23,8 @@ const UIComponents = {
 
     // Use current date from UI context (using local date)
     const currentDate = window.UI && window.UI.currentDate
-      ? (DateUtils ? DateUtils.getLocalDateString(window.UI.currentDate) : window.UI.currentDate.toISOString().split('T')[0])
-      : (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      ? DateUtils.getLocalDateString(window.UI.currentDate)
+      : DateUtils.getLocalDateString(new Date());
 
     // stationNumber or default to 1 for checking completion
     const station = stationNumber || 1;
@@ -146,9 +146,7 @@ const UIComponents = {
 
       // Determine current completion status for animation
       const uiDate = window.UI && window.UI.currentDate ? window.UI.currentDate : new Date();
-      const currentDateStr = (typeof DateUtils !== 'undefined' && DateUtils.getLocalDateString)
-        ? DateUtils.getLocalDateString(uiDate)
-        : uiDate.toISOString().split('T')[0];
+      const currentDateStr = DateUtils.getLocalDateString(uiDate);
       const station = stationNumber || 1;
       // For overdue/catch-up tasks, check completion against the original due date
       const checkDate = (isOverdue || isCatchup) && originalDueDate ? originalDueDate : currentDateStr;
@@ -492,7 +490,7 @@ const UIComponents = {
 
     // Get current date from the date input (using local date)
     const dateInput = document.getElementById('current-date');
-    const currentDate = dateInput ? dateInput.value : (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+    const currentDate = dateInput ? dateInput.value : DateUtils.getLocalDateString(new Date());
 
     if (isCompleted) {
       card.classList.add('completed');
@@ -535,7 +533,7 @@ const UIComponents = {
     checkbox.addEventListener('click', async (e) => {
       // Determine current completion status for animation
       const dateInput = document.getElementById('current-date');
-      const currentDateStr = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+      const currentDateStr = dateInput ? dateInput.value : DateUtils.getLocalDateString(new Date());
       const station = stationNumber || 1;
       const currentlyCompleted = await Storage.isReviewCompleted(item.id, station, currentDateStr);
 
@@ -1000,9 +998,7 @@ const UIComponents = {
           continue;
         }
 
-        const dateKey = DateUtils
-          ? DateUtils.getLocalDateString(cellDate)
-          : cellDate.toISOString().split('T')[0];
+        const dateKey = DateUtils.getLocalDateString(cellDate);
         const count = dailyCounts[dateKey] || 0;
 
         if (count >= 6) cell.classList.add('level-3');

@@ -283,7 +283,7 @@ const UI = {
     } else {
       // Set default start date to today (using local date)
       if (startDateInput && !startDateInput.value) {
-        startDateInput.value = DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0];
+        startDateInput.value = DateUtils.getLocalDateString(new Date());
       }
       // Set default total units to 30
       if (totalUnitsInput && !totalUnitsInput.value) {
@@ -1604,8 +1604,13 @@ const UI = {
           config.morning_hour = parseInt(morningTime.split(':')[0]);
           await Storage.saveConfig(config);
 
-          if (typeof Notifications !== 'undefined') {
-            Notifications.schedule();
+          if (typeof Notifications !== 'undefined' && Notifications.schedule) {
+            Notifications.schedule({
+              id: 'morning',
+              title: (typeof i18n !== 'undefined' && i18n.t('notifications.title')) || 'Monthly Quran',
+              body: (typeof i18n !== 'undefined' && i18n.t('notifications.morningReminder')) || 'Time for your morning review!',
+              schedule: { hour: config.morning_hour, minute: 0 }
+            });
           }
         }
       });
@@ -1619,8 +1624,13 @@ const UI = {
           config.evening_hour = parseInt(eveningTime.split(':')[0]);
           await Storage.saveConfig(config);
 
-          if (typeof Notifications !== 'undefined') {
-            Notifications.schedule();
+          if (typeof Notifications !== 'undefined' && Notifications.schedule) {
+            Notifications.schedule({
+              id: 'evening',
+              title: (typeof i18n !== 'undefined' && i18n.t('notifications.title')) || 'Monthly Quran',
+              body: (typeof i18n !== 'undefined' && i18n.t('notifications.eveningReminder')) || 'Time for your evening review!',
+              schedule: { hour: config.evening_hour, minute: 0 }
+            });
           }
         }
       });
@@ -1649,7 +1659,7 @@ const UI = {
         const data = await Storage.exportData();
         if (!data) return;
 
-        const fileName = `quran-memorization-backup-${DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]}.json`;
+        const fileName = `quran-memorization-backup-${DateUtils.getLocalDateString(new Date())}.json`;
 
         // Check if running in a Capacitor environment
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {

@@ -15,6 +15,7 @@ const urlsToCache = [
   './core/js/adapter/storage.js',
   './core/js/adapter/notifications.js',
   './core/js/storage.js',
+  './core/js/backlog.js',
   './core/js/quran-api.js',
   './core/js/algorithm.js',
   './core/js/i18n.js',
@@ -23,7 +24,13 @@ const urlsToCache = [
   './core/js/components.js',
   './core/js/calendar.js',
   './core/js/ui.js',
+  './core/js/utils/haptics.js',
   './core/js/app.js',
+  './core/assets/fonts/Amiri-Regular.ttf',
+  './core/assets/fonts/IBMPlexSansArabic-Bold.ttf',
+  './core/assets/fonts/IBMPlexSansArabic-Regular.ttf',
+  './core/assets/fonts/ScheherazadeNew-Bold.ttf',
+  './core/assets/fonts/ScheherazadeNew-Regular.ttf',
   './manifest.json'
 ];
 
@@ -64,7 +71,10 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event
 self.addEventListener('fetch', (event) => {
+  // Only handle same-origin GET requests; let everything else pass through
+  if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
   const isCSSFile = CSS_FILES.some(f => url.pathname.endsWith(f.replace('./', '/')));
 
   if (isCSSFile) {
