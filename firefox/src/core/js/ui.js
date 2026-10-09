@@ -341,6 +341,7 @@ const UI = {
 
     if (decreaseBtn && input) {
       decreaseBtn.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.light();
         const currentValue = parseInt(input.value) || DEFAULT_CONFIG.TOTAL_UNITS;
         const newValue = Math.max(1, currentValue - 1);
         input.value = newValue;
@@ -350,6 +351,7 @@ const UI = {
 
     if (increaseBtn && input) {
       increaseBtn.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.light();
         const currentValue = parseInt(input.value) || DEFAULT_CONFIG.TOTAL_UNITS;
         const newValue = currentValue + 1;
         input.value = newValue;
@@ -478,6 +480,8 @@ const UI = {
       const selectedValue = e.target.value;
       if (!selectedValue) return;
 
+      if (typeof HapticsService !== 'undefined') HapticsService.selection();
+
       const option = e.target.querySelector(`option[value="${selectedValue}"]`);
       if (!option || !option.dataset.surahData) return;
 
@@ -523,6 +527,7 @@ const UI = {
     if (unitTypeToggle) {
       unitTypeToggle.querySelectorAll('.toggle-option').forEach(btn => {
         btn.addEventListener('click', () => {
+          if (typeof HapticsService !== 'undefined') HapticsService.selection();
           const value = btn.getAttribute('data-value');
           unitTypeToggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
@@ -537,6 +542,7 @@ const UI = {
     if (languageToggle) {
       languageToggle.querySelectorAll('.toggle-option').forEach(btn => {
         btn.addEventListener('click', () => {
+          if (typeof HapticsService !== 'undefined') HapticsService.selection();
           const value = btn.getAttribute('data-value');
           languageToggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
@@ -554,6 +560,7 @@ const UI = {
     if (themeToggle) {
       themeToggle.querySelectorAll('.toggle-option').forEach(btn => {
         btn.addEventListener('click', () => {
+          if (typeof HapticsService !== 'undefined') HapticsService.selection();
           const value = btn.getAttribute('data-value');
           themeToggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
@@ -571,6 +578,7 @@ const UI = {
     if (unitSizeToggle && customUnitSizeInput) {
       unitSizeToggle.querySelectorAll('.toggle-option').forEach(btn => {
         btn.addEventListener('click', () => {
+          if (typeof HapticsService !== 'undefined') HapticsService.selection();
           const value = btn.getAttribute('data-value');
           unitSizeToggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
@@ -1598,6 +1606,8 @@ const UI = {
       setupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        if (typeof HapticsService !== 'undefined') HapticsService.success();
+
         // Get values from toggles
         const unitTypeToggle = DOMCache.getElementById('unit-type-toggle');
         const languageToggle = DOMCache.getElementById('setup-language-toggle');
@@ -1697,6 +1707,7 @@ const UI = {
     const privacyBtn = DOMCache.getElementById('settings-privacy-btn');
     if (privacyBtn) {
       privacyBtn.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.selection();
         this.showView('privacy-view');
       });
     }
@@ -1705,6 +1716,7 @@ const UI = {
     const privacyBackBtn = DOMCache.getElementById('privacy-back-btn');
     if (privacyBackBtn) {
       privacyBackBtn.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.selection();
         this.showView('settings-view');
       });
     }
@@ -1713,6 +1725,7 @@ const UI = {
     const exportBtn = DOMCache.getElementById('settings-export-btn');
     if (exportBtn) {
       exportBtn.addEventListener('click', async () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.selection();
         const data = await Storage.exportData();
         if (!data) return;
 
@@ -1760,6 +1773,7 @@ const UI = {
     const importBtn = DOMCache.getElementById('settings-import-btn');
     if (importBtn) {
       importBtn.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.selection();
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'application/json';
@@ -1794,6 +1808,7 @@ const UI = {
     const resetBtn = DOMCache.getElementById('settings-reset-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.warning();
         Dialog.showResetConfirm(async () => {
           await Storage.clearAll();
           await Theme.init();
@@ -1809,6 +1824,7 @@ const UI = {
     const progressAddBtn = DOMCache.getElementById('progress-add-btn');
     if (progressAddBtn) {
       progressAddBtn.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.selection();
         Dialog.showAddMemorizationModal(async (data) => {
           const { unitType, totalUnits, startDate, progressionName, startPage } = data;
           const config = await Storage.getConfig();
@@ -1840,6 +1856,7 @@ const UI = {
     const themeToggles = document.querySelectorAll('#theme-toggle, #theme-toggle-progress, #theme-toggle-calendar, #theme-toggle-settings, #theme-toggle-credits');
     themeToggles.forEach(toggle => {
       toggle.addEventListener('click', () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.light();
         Theme.toggle();
       });
     });
@@ -1848,6 +1865,7 @@ const UI = {
     const languageToggles = document.querySelectorAll('#language-toggle, #language-toggle-progress, #language-toggle-calendar, #language-toggle-settings, #language-toggle-credits');
     languageToggles.forEach(toggle => {
       toggle.addEventListener('click', async () => {
+        if (typeof HapticsService !== 'undefined') HapticsService.light();
         const config = await Storage.getConfig();
         if (config) {
           const currentLang = i18n.getLanguage();
