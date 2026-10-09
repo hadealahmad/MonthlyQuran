@@ -134,6 +134,30 @@ const SVGUtils = {
       { tag: 'line', attrs: { x1: '18', y1: '6', x2: '6', y2: '18' } },
       { tag: 'line', attrs: { x1: '6', y1: '6', x2: '18', y2: '18' } }
     ]);
+  },
+
+  /**
+   * Create play icon
+   * @returns {SVGElement} SVG element
+   */
+  createPlayIcon() {
+    const svg = this.createSVG('0 0 24 24', [
+      { tag: 'polygon', attrs: { points: '6 4 20 12 6 20', fill: 'currentColor', stroke: 'none' } }
+    ]);
+    svg.style.cssText = 'width: 1rem; height: 1rem;';
+    return svg;
+  },
+
+  /**
+   * Create pause icon
+   * @returns {SVGElement} SVG element
+   */
+  createPauseIcon() {
+    const svg = this.createSVG('0 0 24 24', [
+      { tag: 'rect', attrs: { x: '6', y: '4', width: '4', height: '16', fill: 'currentColor', stroke: 'none' } },
+      { tag: 'rect', attrs: { x: '14', y: '4', width: '4', height: '16', fill: 'currentColor', stroke: 'none' } }
+    ]);
+    svg.style.cssText = 'width: 1rem; height: 1rem;';
+    return svg;
   }
 };
-

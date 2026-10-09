@@ -2,23 +2,6 @@
 // Note: Named UIComponents to avoid collision with Firefox's deprecated internal objects.
 
 const UIComponents = {
-  // 1. Add the audio playback method
-  playAyahAudio(surah, ayah) {
-    const reciter = "Alafasy_128kbps";
-    const surahStr = String(surah).padStart(3, '0');
-    const ayahStr = String(ayah).padStart(3, '0');
-    const url = `https://everyayah.com/data/${reciter}/${surahStr}${ayahStr}.mp3`;
-
-    let player = document.getElementById("audioPlayer");
-    if (!player) {
-      player = document.createElement("audio");
-      player.id = "audioPlayer";
-      player.style.display = "none";
-      document.body.appendChild(player);
-    }
-    player.src = url;
-    player.play().catch(e => console.error("Audio error:", e));
-  },
   // Create a button element
   createButton(text, variant = 'default', size = 'default', onClick = null) {
     const button = document.createElement('button');
@@ -40,8 +23,8 @@ const UIComponents = {
 
     // Use current date from UI context (using local date)
     const currentDate = window.UI && window.UI.currentDate
-      ? (DateUtils ? DateUtils.getLocalDateString(window.UI.currentDate) : window.UI.currentDate.toISOString().split('T')[0])
-      : (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      ? DateUtils.getLocalDateString(window.UI.currentDate)
+      : DateUtils.getLocalDateString(new Date());
 
     // stationNumber or default to 1 for checking completion
     const station = stationNumber || 1;
@@ -163,9 +146,7 @@ const UIComponents = {
 
       // Determine current completion status for animation
       const uiDate = window.UI && window.UI.currentDate ? window.UI.currentDate : new Date();
-      const currentDateStr = (typeof DateUtils !== 'undefined' && DateUtils.getLocalDateString)
-        ? DateUtils.getLocalDateString(uiDate)
-        : uiDate.toISOString().split('T')[0];
+      const currentDateStr = DateUtils.getLocalDateString(uiDate);
       const station = stationNumber || 1;
       // For overdue/catch-up tasks, check completion against the original due date
       const checkDate = (isOverdue || isCatchup) && originalDueDate ? originalDueDate : currentDateStr;
@@ -509,7 +490,7 @@ const UIComponents = {
 
     // Get current date from the date input (using local date)
     const dateInput = document.getElementById('current-date');
-    const currentDate = dateInput ? dateInput.value : (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+    const currentDate = dateInput ? dateInput.value : DateUtils.getLocalDateString(new Date());
 
     if (isCompleted) {
       card.classList.add('completed');
@@ -552,7 +533,7 @@ const UIComponents = {
     checkbox.addEventListener('click', async (e) => {
       // Determine current completion status for animation
       const dateInput = document.getElementById('current-date');
-      const currentDateStr = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+      const currentDateStr = dateInput ? dateInput.value : DateUtils.getLocalDateString(new Date());
       const station = stationNumber || 1;
       const currentlyCompleted = await Storage.isReviewCompleted(item.id, station, currentDateStr);
 
@@ -604,6 +585,13 @@ const UIComponents = {
     badge.className = `badge badge-${variant}`;
     badge.textContent = text;
     return badge;
+  },
+
+  // Get audio URL for an ayah
+  getAyahAudioUrl(surah, ayah, reciter = 'Husary_64kbps') {
+    const surahStr = String(surah).padStart(3, '0');
+    const ayahStr = String(ayah).padStart(3, '0');
+    return `https://everyayah.com/data/${reciter}/${surahStr}${ayahStr}.mp3`;
   },
 
   // Show reading modal
@@ -669,22 +657,65 @@ const UIComponents = {
     closeBtn.className = 'btn-icon';
     closeBtn.appendChild(SVGUtils.createCloseIcon());
     closeBtn.style.cssText = 'width: 2rem; height: 2rem; font-size: 1.25rem;';
-    closeBtn.onclick = () => overlay.remove();
+    const audioPlayer = new Audio();
+    let currentPlayBtn = null;
+
+    const stopAudio = () => {
+      audioPlayer.pause();
+      audioPlayer.src = '';
+      if (currentPlayBtn) {
+        if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+          currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+        } else {
+          currentPlayBtn.textContent = '▶';
+        }
+        currentPlayBtn = null;
+      }
+    };
+
+    const closeModal = () => {
+      stopAudio();
+      overlay.remove();
+    };
+
+    closeBtn.onclick = closeModal;
+
+    audioPlayer.addEventListener('ended', () => {
+      if (currentPlayBtn) {
+        if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+          currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+        } else {
+          currentPlayBtn.textContent = '▶';
+        }
+        currentPlayBtn = null;
+      }
+    });
+
+    audioPlayer.addEventListener('error', (err) => {
+      console.error('Audio playback error:', err);
+      if (currentPlayBtn) {
+        if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+          currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+        } else {
+          currentPlayBtn.textContent = '▶';
+        }
+        currentPlayBtn = null;
+      }
+    });
     header.appendChild(closeBtn);
 
     modal.appendChild(header);
 
     // Content area
     const content = document.createElement('div');
-    content.className = 'reading-content';
+    content.className = 'reading-content mushaf-page';
     content.style.cssText = `
       flex: 1;
       overflow-y: auto;
-      padding: 1.5rem;
-      direction: rtl; /* Quran text is always RTL */
-      line-height: 2.2;
-      font-size: 1.35rem;
-      font-family: 'Amiri', serif;
+      overflow-x: hidden;
+      padding: 1.5rem 1.25rem 1rem;
+      direction: rtl;
+      background-color: var(--bg);
       color: var(--fg);
     `;
 
@@ -735,7 +766,7 @@ const UIComponents = {
 
     // Close on overlay click
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) closeModal();
     });
 
     // Fetch text data
@@ -743,87 +774,223 @@ const UIComponents = {
       let textData = null;
       if (unitType === 'page') {
         const size = unitSize != null ? parseFloat(unitSize) : 1;
-        textData = size > 1
-            ? await QuranAPI.fetchPageRange(unitNumber, unitNumber + size)
-            : await QuranAPI.fetchPageText(unitNumber);
+        if (size > 1) {
+          // Multi-page unit: fetch range from unitNumber to unitNumber + size
+          const endPage = unitNumber + size;
+          textData = await QuranAPI.fetchPageRange(unitNumber, endPage);
+        } else {
+          // Single page or fractional page (e.g. 3.5 = half of 3 + half of 4)
+          textData = await QuranAPI.fetchPageText(unitNumber);
+        }
+      } else {
+        // Fallback for other unit types
+        content.textContent = 'Units other than "Page" are coming soon to the reader.';
+        return;
       }
 
       if (textData && textData.data && textData.data.ayahs) {
         content.replaceChildren();
+
+        // Helper: Western digits → Arabic-Indic numerals
+        const toArabicNumerals = (n) =>
+          String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+
+        // Mushaf page wrapper
+        const pageWrap = document.createElement('div');
+        pageWrap.style.cssText = `
+          font-family: 'Amiri Quran', 'Amiri', 'Scheherazade New', serif;
+          font-size: 1.25rem;
+          line-height: 2.2;
+          text-align: justify;
+          color: var(--fg);
+          overflow-wrap: break-word;
+          word-break: break-word;
+        `;
+
         let currentSurah = null;
+        let currentBlock = null;
+
+        const flushBlock = () => {
+          if (currentBlock) { pageWrap.appendChild(currentBlock); currentBlock = null; }
+        };
 
         textData.data.ayahs.forEach(ayah => {
+          // New surah
           if (currentSurah !== ayah.surah.number) {
+            flushBlock();
             currentSurah = ayah.surah.number;
-            const surahTitle = document.createElement('div');
-            surahTitle.style.cssText = `text-align: center; background-color: var(--muted-bg); padding: 0.5rem; margin: 1.5rem 0 1rem 0; border-radius: var(--radius); font-size: 1.1rem; color: var(--primary-bg); font-weight: bold;`;
-            surahTitle.textContent = ayah.surah.name;
-            content.appendChild(surahTitle);
+
+            // Surah name banner
+            const surahBanner = document.createElement('div');
+            surahBanner.style.cssText = `
+              text-align: center;
+              margin: 1.25rem 0 0.75rem;
+              padding: 0.5rem 1rem;
+              border-top: 1px solid var(--border-color);
+              border-bottom: 1px solid var(--border-color);
+              font-family: 'Amiri Quran', 'Amiri', serif;
+              font-size: 1.3rem;
+              font-weight: bold;
+              color: var(--fg);
+            `;
+            surahBanner.textContent = ayah.surah.name;
+            pageWrap.appendChild(surahBanner);
+
+            // Bismillah — skip At-Tawbah (9) and Al-Fatiha first ayah (included in text)
+            if (ayah.surah.number !== 9 && !(ayah.surah.number === 1 && ayah.numberInSurah === 1)) {
+              const bismillah = document.createElement('div');
+              bismillah.style.cssText = `
+                text-align: center;
+                font-family: 'Amiri Quran', 'Amiri', serif;
+                font-size: 1.3rem;
+                margin-bottom: 0.75rem;
+                color: var(--fg);
+              `;
+              bismillah.textContent = '\u0628\u0650\u0633\u0652\u0645\u0650 \u0671\u0644\u0644\u0651\u064E\u0647\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0652\u0645\u064E\u0640\u0670\u0646\u0650 \u0671\u0644\u0631\u0651\u064E\u062D\u0650\u06CC\u0645\u0650';
+              pageWrap.appendChild(bismillah);
+            }
+
+            currentBlock = document.createElement('div');
+            currentBlock.style.cssText = 'text-align: justify; text-align-last: center;';
           }
 
-          const ayahSpan = document.createElement('span');
-          ayahSpan.className = 'ayah-text';
+          // Ayah text
+          currentBlock.appendChild(document.createTextNode(ayah.text + ' '));
 
-          // 1. Add Quranic Text
-          const textNode = document.createTextNode(ayah.text + ' ');
-          ayahSpan.appendChild(textNode);
+          // Action wrapper for ayah end marker + audio play button
+          const ayahActionGroup = document.createElement('span');
+          ayahActionGroup.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            gap: 2px;
+            margin: 0 0.2em;
+            white-space: nowrap;
+          `;
 
-          // 2. Create a container for Number + Audio Button
-          const actionContainer = document.createElement('span');
-          actionContainer.style.cssText = `
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          margin: 0 8px;
-          vertical-align: middle;
-          white-space: nowrap;
-        `;
+          // Ayah end marker: green circle with number (like Uthmani mushaf)
+          const marker = document.createElement('span');
+          marker.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 50%;
+            border: 1.5px solid var(--success-bg);
+            font-family: sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--success-bg);
+            vertical-align: middle;
+            white-space: nowrap;
+          `;
+          marker.textContent = toArabicNumerals(ayah.numberInSurah);
+          ayahActionGroup.appendChild(marker);
 
-          // The Ayah Number Badge
-          const badge = document.createElement('span');
-          badge.style.cssText = `
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 1.8rem;
-          height: 1.8rem;
-          border: 1px solid var(--border-color);
-          border-radius: 50%;
-          font-size: 0.75rem;
+          // Audio play button
+          const playBtn = document.createElement('button');
+          playBtn.type = 'button';
+          playBtn.className = 'btn-icon ayah-play-btn';
+          playBtn.setAttribute('aria-label', `Play ayah ${ayah.numberInSurah}`);
+          playBtn.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.3rem;
+            height: 1.3rem;
+            border: none;
+            background: none;
+            color: var(--primary-bg);
+            cursor: pointer;
+            padding: 0;
+            vertical-align: middle;
+            opacity: 0.85;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+          `;
+          if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+            playBtn.appendChild(SVGUtils.createPlayIcon());
+          } else {
+            playBtn.textContent = '▶';
+          }
+
+          playBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (typeof HapticsService !== 'undefined') HapticsService.light();
+
+            const surah = String(ayah.surah.number).padStart(3, '0');
+            const ayahNum = String(ayah.numberInSurah).padStart(3, '0');
+            const reciterFolder = 'Husary_64kbps';
+            const url = `https://everyayah.com/data/${reciterFolder}/${surah}${ayahNum}.mp3`;
+
+            // If clicking the currently playing ayah -> toggle pause
+            if (currentPlayBtn === playBtn && !audioPlayer.paused) {
+              audioPlayer.pause();
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+                playBtn.replaceChildren(SVGUtils.createPlayIcon());
+              } else {
+                playBtn.textContent = '▶';
+              }
+              return;
+            }
+
+            // Reset previous button
+            if (currentPlayBtn && currentPlayBtn !== playBtn) {
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+                currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+              } else {
+                currentPlayBtn.textContent = '▶';
+              }
+            }
+
+            currentPlayBtn = playBtn;
+            if (audioPlayer.src !== url) {
+              audioPlayer.src = url;
+            }
+
+            try {
+              await audioPlayer.play();
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPauseIcon) {
+                playBtn.replaceChildren(SVGUtils.createPauseIcon());
+              } else {
+                playBtn.textContent = '⏸';
+              }
+            } catch (err) {
+              console.error('Audio playback failed:', err);
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+                playBtn.replaceChildren(SVGUtils.createPlayIcon());
+              } else {
+                playBtn.textContent = '▶';
+              }
+              currentPlayBtn = null;
+            }
+          });
+
+          ayahActionGroup.appendChild(playBtn);
+          currentBlock.appendChild(ayahActionGroup);
+          currentBlock.appendChild(document.createTextNode(' '));
+        });
+
+        flushBlock();
+
+        // Page number footer
+        const pageFooter = document.createElement('div');
+        pageFooter.style.cssText = `
+          text-align: center;
+          margin-top: 1.5rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid var(--border-color);
+          font-family: 'Amiri Quran', 'Amiri', serif;
+          font-size: 0.95rem;
           color: var(--muted-fg);
         `;
-          badge.textContent = ayah.numberInSurah;
+        const displayPage = unitSize && parseFloat(unitSize) > 1
+          ? toArabicNumerals(unitNumber) + ' \u2013 ' + toArabicNumerals(Math.floor(unitNumber + parseFloat(unitSize) - 1))
+          : toArabicNumerals(unitNumber);
+        pageFooter.textContent = displayPage;
+        pageWrap.appendChild(pageFooter);
 
-          // The Separate Play Button
-          const playBtn = document.createElement('button');
-          playBtn.innerHTML = '▶️'; // You can replace with an SVG icon if preferred
-          playBtn.style.cssText = `
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-size: 1rem;
-          padding: 2px;
-          line-height: 1;
-          transition: transform 0.1s;
-        `;
-
-          playBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.playAyahAudio(ayah.surah.number, ayah.numberInSurah);
-          };
-
-          // Hover effect for the button
-          playBtn.onmouseenter = () => { playBtn.style.transform = 'scale(1.2)'; };
-          playBtn.onmouseleave = () => { playBtn.style.transform = 'scale(1)'; };
-
-          // Assemble: Text -> (Number + Button)
-          actionContainer.appendChild(badge);
-          actionContainer.appendChild(playBtn);
-
-          ayahSpan.appendChild(actionContainer);
-          content.appendChild(ayahSpan);
-        });
-        // Add the footer after the loop is done
+        content.appendChild(pageWrap);
         modal.appendChild(footer);
       } else {
         content.textContent = i18n.t('reading.error');
@@ -832,7 +999,6 @@ const UIComponents = {
       console.error('Error in reading modal:', error);
       content.textContent = i18n.t('reading.error');
     }
-
   },
 
   // Create a 365-day activity heatmap (Consistency Map)
@@ -974,9 +1140,7 @@ const UIComponents = {
           continue;
         }
 
-        const dateKey = DateUtils
-          ? DateUtils.getLocalDateString(cellDate)
-          : cellDate.toISOString().split('T')[0];
+        const dateKey = DateUtils.getLocalDateString(cellDate);
         const count = dailyCounts[dateKey] || 0;
 
         if (count >= 6) cell.classList.add('level-3');
