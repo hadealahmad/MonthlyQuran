@@ -587,6 +587,13 @@ const UIComponents = {
     return badge;
   },
 
+  // Get audio URL for an ayah
+  getAyahAudioUrl(surah, ayah, reciter = 'Husary_64kbps') {
+    const surahStr = String(surah).padStart(3, '0');
+    const ayahStr = String(ayah).padStart(3, '0');
+    return `https://everyayah.com/data/${reciter}/${surahStr}${ayahStr}.mp3`;
+  },
+
   // Show reading modal
   async showReadingModal(itemId, stationNumber, date, unitNumber, unitType = 'page', unitSize = null) {
     // Create modal overlay
@@ -650,7 +657,51 @@ const UIComponents = {
     closeBtn.className = 'btn-icon';
     closeBtn.appendChild(SVGUtils.createCloseIcon());
     closeBtn.style.cssText = 'width: 2rem; height: 2rem; font-size: 1.25rem;';
-    closeBtn.onclick = () => overlay.remove();
+    const audioPlayer = new Audio();
+    let currentPlayBtn = null;
+
+    const stopAudio = () => {
+      audioPlayer.pause();
+      audioPlayer.src = '';
+      if (currentPlayBtn) {
+        if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+          currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+        } else {
+          currentPlayBtn.textContent = '▶';
+        }
+        currentPlayBtn = null;
+      }
+    };
+
+    const closeModal = () => {
+      stopAudio();
+      overlay.remove();
+    };
+
+    closeBtn.onclick = closeModal;
+
+    audioPlayer.addEventListener('ended', () => {
+      if (currentPlayBtn) {
+        if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+          currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+        } else {
+          currentPlayBtn.textContent = '▶';
+        }
+        currentPlayBtn = null;
+      }
+    });
+
+    audioPlayer.addEventListener('error', (err) => {
+      console.error('Audio playback error:', err);
+      if (currentPlayBtn) {
+        if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+          currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+        } else {
+          currentPlayBtn.textContent = '▶';
+        }
+        currentPlayBtn = null;
+      }
+    });
     header.appendChild(closeBtn);
 
     modal.appendChild(header);
@@ -715,7 +766,7 @@ const UIComponents = {
 
     // Close on overlay click
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) closeModal();
     });
 
     // Fetch text data
@@ -806,6 +857,17 @@ const UIComponents = {
           // Ayah text
           currentBlock.appendChild(document.createTextNode(ayah.text + ' '));
 
+          // Action wrapper for ayah end marker + audio play button
+          const ayahActionGroup = document.createElement('span');
+          ayahActionGroup.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            gap: 2px;
+            margin: 0 0.2em;
+            white-space: nowrap;
+          `;
+
           // Ayah end marker: green circle with number (like Uthmani mushaf)
           const marker = document.createElement('span');
           marker.style.cssText = `
@@ -821,11 +883,91 @@ const UIComponents = {
             font-weight: 600;
             color: var(--success-bg);
             vertical-align: middle;
-            margin: 0 0.15em;
             white-space: nowrap;
           `;
           marker.textContent = toArabicNumerals(ayah.numberInSurah);
-          currentBlock.appendChild(marker);
+          ayahActionGroup.appendChild(marker);
+
+          // Audio play button
+          const playBtn = document.createElement('button');
+          playBtn.type = 'button';
+          playBtn.className = 'btn-icon ayah-play-btn';
+          playBtn.setAttribute('aria-label', `Play ayah ${ayah.numberInSurah}`);
+          playBtn.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.3rem;
+            height: 1.3rem;
+            border: none;
+            background: none;
+            color: var(--primary-bg);
+            cursor: pointer;
+            padding: 0;
+            vertical-align: middle;
+            opacity: 0.85;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+          `;
+          if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+            playBtn.appendChild(SVGUtils.createPlayIcon());
+          } else {
+            playBtn.textContent = '▶';
+          }
+
+          playBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (typeof HapticsService !== 'undefined') HapticsService.light();
+
+            const surah = String(ayah.surah.number).padStart(3, '0');
+            const ayahNum = String(ayah.numberInSurah).padStart(3, '0');
+            const reciterFolder = 'Husary_64kbps';
+            const url = `https://everyayah.com/data/${reciterFolder}/${surah}${ayahNum}.mp3`;
+
+            // If clicking the currently playing ayah -> toggle pause
+            if (currentPlayBtn === playBtn && !audioPlayer.paused) {
+              audioPlayer.pause();
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+                playBtn.replaceChildren(SVGUtils.createPlayIcon());
+              } else {
+                playBtn.textContent = '▶';
+              }
+              return;
+            }
+
+            // Reset previous button
+            if (currentPlayBtn && currentPlayBtn !== playBtn) {
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+                currentPlayBtn.replaceChildren(SVGUtils.createPlayIcon());
+              } else {
+                currentPlayBtn.textContent = '▶';
+              }
+            }
+
+            currentPlayBtn = playBtn;
+            if (audioPlayer.src !== url) {
+              audioPlayer.src = url;
+            }
+
+            try {
+              await audioPlayer.play();
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPauseIcon) {
+                playBtn.replaceChildren(SVGUtils.createPauseIcon());
+              } else {
+                playBtn.textContent = '⏸';
+              }
+            } catch (err) {
+              console.error('Audio playback failed:', err);
+              if (typeof SVGUtils !== 'undefined' && SVGUtils.createPlayIcon) {
+                playBtn.replaceChildren(SVGUtils.createPlayIcon());
+              } else {
+                playBtn.textContent = '▶';
+              }
+              currentPlayBtn = null;
+            }
+          });
+
+          ayahActionGroup.appendChild(playBtn);
+          currentBlock.appendChild(ayahActionGroup);
           currentBlock.appendChild(document.createTextNode(' '));
         });
 
