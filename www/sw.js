@@ -1,4 +1,4 @@
-const CACHE_NAME = 'monthlyquran-v1.5.2';
+const CACHE_NAME = 'monthlyquran-v1.6.5';
 const urlsToCache = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const urlsToCache = [
   './core/js/adapter/storage.js',
   './core/js/adapter/notifications.js',
   './core/js/storage.js',
+  './core/js/backlog.js',
   './core/js/quran-api.js',
   './core/js/algorithm.js',
   './core/js/i18n.js',
@@ -23,8 +24,23 @@ const urlsToCache = [
   './core/js/components.js',
   './core/js/calendar.js',
   './core/js/ui.js',
+  './core/js/utils/haptics.js',
   './core/js/app.js',
+  './core/assets/fonts/Amiri-Regular.ttf',
+  './core/assets/fonts/IBMPlexSansArabic-Bold.ttf',
+  './core/assets/fonts/IBMPlexSansArabic-Regular.ttf',
+  './core/assets/fonts/ScheherazadeNew-Bold.ttf',
+  './core/assets/fonts/ScheherazadeNew-Regular.ttf',
   './manifest.json'
+];
+
+// CSS files — always fetch fresh from network (never serve from cache)
+const CSS_FILES = [
+  './core/css/components.css',
+  './core/css/styles.css',
+  './core/css/themes.css',
+  './core/css/navigation.css',
+  './core/css/fonts.css',
 ];
 
 // Install event - cache resources
@@ -53,20 +69,40 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event
 self.addEventListener('fetch', (event) => {
+  // Only handle same-origin GET requests; let everything else pass through
+  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+  const isCSSFile = CSS_FILES.some(f => url.pathname.endsWith(f.replace('./', '/')));
+
+  if (isCSSFile) {
+    // Network-first for CSS: always get fresh styles, fall back to cache
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          // Update cache with fresh version
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for everything else
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
         return response || fetch(event.request);
       })
       .catch(() => {
-        // If both fail, return offline page for navigation requests
         if (event.request.mode === 'navigate') {
           return caches.match('./index.html');
         }
       })
   );
 });
+
 

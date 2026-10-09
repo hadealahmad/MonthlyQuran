@@ -90,7 +90,8 @@ const translations = {
       resetApp: 'Reset Application',
       exportData: 'Export Data',
       importData: 'Import Data',
-      enableHaptics: 'Device Vibration'
+      enableHaptics: 'Device Vibration',
+      enableTransitions: 'View Transitions'
     },
     calendar: {
       close: 'Close',
@@ -320,7 +321,8 @@ const translations = {
       resetApp: 'إعادة تعيين التطبيق',
       exportData: 'تصدير البيانات',
       importData: 'استيراد البيانات',
-      enableHaptics: 'اهتزاز الجهاز'
+      enableHaptics: 'اهتزاز الجهاز',
+      enableTransitions: 'انتقالات العرض'
     },
     calendar: {
       close: 'إغلاق',

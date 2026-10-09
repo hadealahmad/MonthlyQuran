@@ -164,7 +164,7 @@ const Calendar = {
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(this.currentYear, this.currentMonth, day);
-      const dateStr = DateUtils ? DateUtils.getLocalDateString(date) : date.toISOString().split('T')[0];
+      const dateStr = DateUtils.getLocalDateString(date);
 
       const dayEl = document.createElement('div');
       dayEl.className = 'calendar-day';
@@ -173,7 +173,7 @@ const Calendar = {
 
       // Check if this is the selected date (from UI context)
       const selectedDateStr = window.UI && window.UI.currentDate
-        ? (DateUtils ? DateUtils.getLocalDateString(window.UI.currentDate) : window.UI.currentDate.toISOString().split('T')[0])
+        ? DateUtils.getLocalDateString(window.UI.currentDate)
         : null;
       const isSelected = selectedDateStr === dateStr;
 
@@ -259,7 +259,7 @@ const Calendar = {
 
     for (let day = 1; day <= lastDay.getDate(); day++) {
       const date = new Date(year, month, day);
-      const dateStr = DateUtils ? DateUtils.getLocalDateString(date) : date.toISOString().split('T')[0];
+      const dateStr = DateUtils.getLocalDateString(date);
 
       // Get schedule for this day using the algorithm
       // For calendar view, treat all dates as selected dates (show all tasks)

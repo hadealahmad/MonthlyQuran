@@ -67,26 +67,46 @@ const UI = {
   currentView: 'today-view',
   viewHistory: [],
 
+  // Whether View Transitions are enabled (synced from config)
+  _transitionsEnabled: true,
+
   // Show a specific view
   async showView(viewId) {
     try {
-      // Get all views - don't use cache here to be safe
-      const views = document.querySelectorAll('.view');
-      if (views.length > 0) {
-        // Use a standard for loop for better compatibility
+      // Tab order mirrors the bottom-nav; used to compute slide direction
+      const TAB_ORDER = ['today-view', 'progress-view', 'calendar-view', 'settings-view', 'credits-view'];
+      const fromIndex = TAB_ORDER.indexOf(this.currentView);
+      const toIndex   = TAB_ORDER.indexOf(viewId);
+      const direction = (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex)
+        ? (toIndex > fromIndex ? 1 : -1)
+        : 1;
+      document.documentElement.style.setProperty('--transition-direction', direction);
+
+      // Synchronous DOM swap — safe to call inside startViewTransition callback
+      const performSwap = () => {
+        const views = document.querySelectorAll('.view');
         for (let i = 0; i < views.length; i++) {
           views[i].classList.add('hidden');
+          views[i].style.viewTransitionName = '';
         }
-      }
+        const targetView = document.getElementById(viewId);
+        if (targetView) {
+          targetView.classList.remove('hidden');
+          targetView.style.viewTransitionName = 'tab-content';
+          window.scrollTo(0, 0);
+        } else {
+          Logger.error(`View not found: ${viewId}`);
+        }
+      };
 
-      const targetView = document.getElementById(viewId);
-      if (targetView) {
-        targetView.classList.remove('hidden');
-
-        // Ensure the screen scrolls back to top during view switch
-        window.scrollTo(0, 0);
+      // Use the View Transitions API when available and not disabled by user
+      if (document.startViewTransition && this._transitionsEnabled !== false && this.currentView !== viewId) {
+        // Tag the outgoing view so the API sees it in the "before" snapshot
+        const outgoingEl = this.currentView ? document.getElementById(this.currentView) : null;
+        if (outgoingEl) outgoingEl.style.viewTransitionName = 'tab-content';
+        document.startViewTransition(() => performSwap());
       } else {
-        Logger.error(`View not found: ${viewId}`);
+        performSwap();
       }
 
       // Update tab active state
@@ -283,7 +303,7 @@ const UI = {
     } else {
       // Set default start date to today (using local date)
       if (startDateInput && !startDateInput.value) {
-        startDateInput.value = DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0];
+        startDateInput.value = DateUtils.getLocalDateString(new Date());
       }
       // Set default total units to 30
       if (totalUnitsInput && !totalUnitsInput.value) {
@@ -1470,6 +1490,24 @@ const UI = {
       });
     }
 
+    // Transitions toggle
+    const transitionsToggle = DOMCache.getElementById('settings-transitions-toggle');
+    if (transitionsToggle) {
+      const isEnabledValue = this._transitionsEnabled !== false ? 'true' : 'false';
+      transitionsToggle.querySelectorAll('.toggle-option').forEach(btn => {
+        if (btn.getAttribute('data-value') === isEnabledValue) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      // Hide the row on browsers that don't support the View Transitions API
+      if (!document.startViewTransition) {
+        const row = transitionsToggle.closest('.setup-toggle-group');
+        if (row) row.style.display = 'none';
+      }
+    }
+
     // Initialize toggle event listeners
     this.initSettingsToggles();
   },
@@ -1534,6 +1572,25 @@ const UI = {
               HapticsService.updateConfig(value);
               HapticsService.selection(); // Provide immediate small feedback when interacting
             }
+          }
+        });
+      });
+    }
+
+    // Transitions toggle
+    const transitionsToggleInput = DOMCache.getElementById('settings-transitions-toggle');
+    if (transitionsToggleInput) {
+      transitionsToggleInput.querySelectorAll('.toggle-option').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const value = btn.getAttribute('data-value') === 'true';
+          transitionsToggleInput.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          this._transitionsEnabled = value;
+          const config = await Storage.getConfig();
+          if (config) {
+            config.enable_transitions = value;
+            await Storage.saveConfig(config);
           }
         });
       });
@@ -1614,8 +1671,13 @@ const UI = {
           config.morning_hour = parseInt(morningTime.split(':')[0]);
           await Storage.saveConfig(config);
 
-          if (typeof Notifications !== 'undefined') {
-            Notifications.schedule();
+          if (typeof Notifications !== 'undefined' && Notifications.schedule) {
+            Notifications.schedule({
+              id: 'morning',
+              title: (typeof i18n !== 'undefined' && i18n.t('notifications.title')) || 'Monthly Quran',
+              body: (typeof i18n !== 'undefined' && i18n.t('notifications.morningReminder')) || 'Time for your morning review!',
+              schedule: { hour: config.morning_hour, minute: 0 }
+            });
           }
         }
       });
@@ -1629,8 +1691,13 @@ const UI = {
           config.evening_hour = parseInt(eveningTime.split(':')[0]);
           await Storage.saveConfig(config);
 
-          if (typeof Notifications !== 'undefined') {
-            Notifications.schedule();
+          if (typeof Notifications !== 'undefined' && Notifications.schedule) {
+            Notifications.schedule({
+              id: 'evening',
+              title: (typeof i18n !== 'undefined' && i18n.t('notifications.title')) || 'Monthly Quran',
+              body: (typeof i18n !== 'undefined' && i18n.t('notifications.eveningReminder')) || 'Time for your evening review!',
+              schedule: { hour: config.evening_hour, minute: 0 }
+            });
           }
         }
       });
@@ -1662,7 +1729,7 @@ const UI = {
         const data = await Storage.exportData();
         if (!data) return;
 
-        const fileName = `quran-memorization-backup-${DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]}.json`;
+        const fileName = `quran-memorization-backup-${DateUtils.getLocalDateString(new Date())}.json`;
 
         // Check if running in a Capacitor environment
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
