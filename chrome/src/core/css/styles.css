@@ -696,6 +696,7 @@ body {
       opacity: 1;
       transform: translateX(0);
     }
+
     to {
       opacity: 0;
       transform: translateX(calc(-32px * var(--transition-direction)));
@@ -707,6 +708,7 @@ body {
       opacity: 0;
       transform: translateX(calc(32px * var(--transition-direction)));
     }
+
     to {
       opacity: 1;
       transform: translateX(0);
