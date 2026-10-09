@@ -1,8 +1,14 @@
 #!/bin/bash
 
-# Configuration
-KEYSTORE="/run/media/hadi/SSD1/androidkeypersonal.jks"
-ALIAS="key0"
+# Configuration (override via environment: KEYSTORE_PATH, KEY_ALIAS)
+KEYSTORE="${KEYSTORE_PATH:-/run/media/hadi/SSD1/androidkeypersonal.jks}"
+ALIAS="${KEY_ALIAS:-key0}"
+
+if [ ! -f "$KEYSTORE" ]; then
+  echo "❌ Keystore not found at: $KEYSTORE"
+  echo "   Set KEYSTORE_PATH (and optionally KEY_ALIAS) in your environment."
+  exit 1
+fi
 
 # Determine paths relative to this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

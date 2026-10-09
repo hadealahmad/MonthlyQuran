@@ -1,8 +1,7 @@
 {
   "name": "monthlyquran",
-  "version": "1.5.2",
+  "version": "1.6.5",
   "description": "A simple web application for tracking Quran memorization using a spaced repetition system. The app helps you follow a 7-station review schedule based on memory retention principles.",
-  "main": "sw.js",
   "directories": {
     "doc": "docs"
   },
@@ -10,7 +9,7 @@
     "sync": "node scripts/sync.js && node scripts/patch-android-plugins.js",
     "build": "node scripts/build.js",
     "build:extensions": "node scripts/build-extensions.js",
-    "android:run": "npm run sync && ANDROID_HOME=/home/hadi/Android/Sdk npx cap run android",
+    "android:run": "npm run sync && ANDROID_HOME=/home/$USER/Android/Sdk npx cap run android",
     "android:build": "cd android && ./gradlew assembleDebug",
     "android:build:release": "cd android && ./gradlew bundleRelease",
     "sign:android": "bash scripts/sign-release-bundle.sh",
@@ -24,7 +23,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/hadealahmad/MonthlyQuran/issues"
@@ -42,5 +41,6 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5"
-  }
+  },
+  "test": "node scripts/test-storage-migration.js"
 }

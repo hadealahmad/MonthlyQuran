@@ -1,5 +1,7 @@
 # Monthly Quran
 
+[![itqan: ناقش](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSIyMCI+PGcgZmlsbD0iI2ZmZiI+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjIwIiBmaWxsPSIjMTBiOTgxIi8+PHJlY3QgeD0iNDAiIHdpZHRoPSI0MCIgaGVpZ2h0PSIyMCIgZmlsbD0iIzFlMjkzYiIvPjx0ZXh0IHg9IjIwIiB5PSIxNCIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxMCIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiNmZmYiPml0cWFuPC90ZXh0Pjx0ZXh0IHg9IjYwIiB5PSIxNCIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2Y4ZmFmYyI+2YbYp9mC2LQ8L3RleHQ+PC9nPjwvc3ZnPg==)](https://community.itqan.dev/d/125)
+
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.monthlyquran.app">
     <img src="https://img.shields.io/badge/Google_Play-414141?style=for-the-badge&logo=google-play&logoColor=white" alt="Get it on Google Play" height="50">
@@ -39,7 +41,7 @@ This project uses a unified codebase located in `core/`.
 - **`chrome/`, `firefox/`, `www/`**: Platform wrappers that receive code from `core/`.
 - **`scripts/`**: Build and synchronization tooling.
 
-For a detailed deep-dive on the architecture and how to replicate it, read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [agent/abstract.md](agent/abstract.md).
+For a detailed deep-dive on the architecture and how to replicate it, read [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) and [docs/architecture/ABSTRACT.md](docs/architecture/ABSTRACT.md).
 
 ## Getting Started (Development)
 
@@ -77,10 +79,12 @@ npm run android:run
 │   └── assets/            # Shared Icons
 ├── chrome/                # Chrome Extension Wrapper
 ├── firefox/               # Firefox Extension Wrapper
-├── www/                   # Web/PWA Wrapper
+├── www/                   # Web/PWA Wrapper (build output)
 ├── android/               # Native Android Project (Capacitor)
 └── scripts/               # Automation Scripts
 ```
+
+Full structure map: [docs/README.md](docs/README.md).
 
 ## Features
 
@@ -104,13 +108,20 @@ Each station represents a calculated timing for repetition to enhance permanent 
 
 ## Documentation
 
-Detailed documentation is available in the `docs/` folder:
+Detailed documentation lives in the [`docs/`](docs/README.md) folder:
 
-- [Architecture](docs/ARCHITECTURE.md) - Deep dive into structure and sync logic.
-- [Abstract for AI Agents](agent/abstract.md) - High-level conceptual guide for replicating this architecture.
-- [User Guide](docs/USER_GUIDE.md) - How to use the application.
-- [Development Guide](docs/DEVELOPMENT.md) - For contributors.
-- [Memorization Rules](docs/MemorizationRules.md) - Algorithm methodology.
+- [Documentation Index & Project Map](docs/README.md) - Start here.
+- [Architecture](docs/architecture/ARCHITECTURE.md) - Deep dive into structure, modules, and sync logic.
+- [Architecture Abstract](docs/architecture/ABSTRACT.md) - High-level conceptual guide for replicating this architecture.
+- [Data Schema](docs/architecture/DATA_SCHEMA.md) - Storage keys, config and item formats.
+- [Features](docs/features/FEATURES.md) - Full feature list verified against the code.
+- [Memorization Rules](docs/features/MemorizationRules.md) - Algorithm methodology (7-station schedule).
+- [Development Guide](docs/development/DEVELOPMENT.md) - For contributors: setup, conventions, dev workflow.
+- [Sync Process](docs/development/SYNC_PROCESS.md) - How the build/sync pipeline works.
+- [Release Guide](docs/development/RELEASE.md) - Versioning, signing, distribution channels.
+- [Android Guide](docs/platforms/ANDROID_GUIDE.md) - Capacitor workflow and troubleshooting.
+- [Extensions Guide](docs/platforms/EXTENSIONS.md) - Chrome/Firefox shells and manifests.
+- [Styling & Design Guidelines](docs/design/STYLING.md) - Design tokens, typography, i18n/RTL.
 
 ## License
 

@@ -529,7 +529,7 @@ const Dialog = {
     startDateInput.type = 'date';
     startDateInput.id = 'add-memorization-start-date';
     startDateInput.className = 'input';
-    startDateInput.value = DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0];
+    startDateInput.value = DateUtils.getLocalDateString(new Date());
     startDateInput.required = true;
     startDateGroup.appendChild(startDateInput);
     form.appendChild(startDateGroup);

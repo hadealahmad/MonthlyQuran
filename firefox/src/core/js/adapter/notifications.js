@@ -9,6 +9,9 @@ const notifications = (() => {
     const isWeb = !isExtension && !isMobile;
     const api = typeof browser !== 'undefined' ? browser : (typeof chrome !== 'undefined' ? chrome : null);
 
+    // Track active web timeouts so they can be cancelled/replaced (BUG-05)
+    const webTimeouts = new Map();
+
     return {
         async init() {
             Logger.info('Initializing Notifications Adapter', { isExtension, isMobile, isWeb });
@@ -46,10 +49,16 @@ const notifications = (() => {
 
         async schedule(options) {
             // Options: { id, title, body, schedule: { hour, minute } }
+            if (!options || !options.schedule || typeof options.schedule.hour !== 'number') {
+                Logger.error('Notifications.schedule called without valid options:', options);
+                return;
+            }
+
             Logger.info('Scheduling notification', options);
 
             const hour = options.schedule.hour;
             const minute = options.schedule.minute || 0;
+            const id = options.id != null ? options.id : 'reminder';
 
             if (isMobile && this.plugin) {
                 await this.plugin.schedule({
@@ -57,23 +66,15 @@ const notifications = (() => {
                         id: options.id,
                         title: options.title,
                         body: options.body,
-                        extra: { reminderId: options.id },
+                        extra: { reminderId: id },
                         schedule: { on: { hour, minute }, allowWhileIdle: true }
                     }]
                 });
             } else if (isExtension) {
                 // Use chrome.alarms to wake up background script
-                // We need a unique name for the alarm
-                const alarmName = `reminder-${options.id}`;
+                const alarmName = `reminder-${id}`;
 
-                // Calculate time until next occurrence
-                // This is a naive implementation, real world needs more robust time calculation
-                // but chrome.alarms.create with 'when' argument is standard
-                // or 'periodInMinutes' if we want it repeating. 
-                // Detailed scheduling usually happens in background service worker.
-                // WE SEND A MESSAGE TO BACKGROUND WORKER TO SCHEDULE
-
-                api.runtime.sendMessage({
+                const send = api.runtime.sendMessage({
                     type: 'SCHEDULE_ALARM',
                     payload: {
                         name: alarmName,
@@ -83,6 +84,10 @@ const notifications = (() => {
                         body: options.body
                     }
                 });
+                // MV3 returns a promise that rejects if no listener is awake; don't crash
+                if (send && typeof send.catch === 'function') {
+                    send.catch(err => Logger.warn('Alarm scheduling message failed:', err));
+                }
 
             } else if (isWeb) {
                 // Web Notification (Active Session Only)
@@ -95,14 +100,18 @@ const notifications = (() => {
 
                 const delay = target.getTime() - now.getTime();
 
-                // Clear existing timeout for this ID if tracked
-                // ...
+                // Replace any existing timeout for this ID (BUG-05)
+                if (webTimeouts.has(id)) {
+                    clearTimeout(webTimeouts.get(id));
+                }
 
-                setTimeout(() => {
-                    if (Notification.permission === 'granted') {
+                const timeoutId = setTimeout(() => {
+                    webTimeouts.delete(id);
+                    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                         new Notification(options.title, { body: options.body });
                     }
                 }, delay);
+                webTimeouts.set(id, timeoutId);
             }
         },
 
@@ -113,9 +122,17 @@ const notifications = (() => {
                     await this.plugin.cancel(pending);
                 }
             } else if (isExtension) {
-                api.runtime.sendMessage({ type: 'CANCEL_ALL_ALARMS' });
+                try {
+                    const send = api.runtime.sendMessage({ type: 'CANCEL_ALL_ALARMS' });
+                    if (send && typeof send.catch === 'function') {
+                        send.catch(err => Logger.warn('Cancel alarms message failed:', err));
+                    }
+                } catch (err) {
+                    Logger.warn('Cancel alarms message failed:', err);
+                }
             } else if (isWeb) {
-                // Clear timeouts
+                webTimeouts.forEach(t => clearTimeout(t));
+                webTimeouts.clear();
             }
         }
     };

@@ -25,11 +25,8 @@ Thumbs.db
 # Capacitor
 # generated icons
 resources/
-docs/
-agent/
 build/
-<<<<<<< HEAD
 _backup/
-=======
-_backup/
->>>>>>> 7eac44dbb6ff27741b8ecc77c6673b3075642ee3
+
+# Research / study notes
+study/

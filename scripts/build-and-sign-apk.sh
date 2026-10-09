@@ -1,9 +1,15 @@
 #!/bin/bash
 
-# Configuration
-KEYSTORE="/run/media/hadi/SSD1/androidkeypersonal.jks"
-ALIAS="key0"
-ANDROID_SDK_ROOT="/home/hadi/Android/Sdk"
+# Configuration (override via environment: KEYSTORE_PATH, KEY_ALIAS, ANDROID_SDK_ROOT, BUILD_TOOLS_VERSION)
+KEYSTORE="${KEYSTORE_PATH:-/run/media/hadi/SSD1/androidkeypersonal.jks}"
+ALIAS="${KEY_ALIAS:-key0}"
+ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-/home/hadi/Android/Sdk}"
+
+if [ ! -f "$KEYSTORE" ]; then
+  echo "❌ Keystore not found at: $KEYSTORE"
+  echo "   Set KEYSTORE_PATH (and optionally KEY_ALIAS) in your environment."
+  exit 1
+fi
 BUILD_TOOLS_VERSION="36.1.0"
 ZIPALIGN="$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/zipalign"
 APKSIGNER="$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION/apksigner"

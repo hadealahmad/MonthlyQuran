@@ -47,10 +47,13 @@ const App = {
       // Initialize with saved config
       i18n.init(config.language);
       await Theme.init();
-      
+
       if (typeof HapticsService !== 'undefined') {
         HapticsService.init(config);
       }
+
+      // Sync transitions flag so showView() can check it synchronously
+      UI._transitionsEnabled = config.enable_transitions !== false;
 
       // Initialize tab navigation
       UI.initTabNavigation();

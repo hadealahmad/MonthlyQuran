@@ -31,6 +31,7 @@ const Storage = {
         start_page: config.start_page !== undefined ? config.start_page : 1,
         unit_size: config.unit_type === 'page' && config.unit_size != null ? config.unit_size : null,
         enable_haptics: config.enable_haptics !== undefined ? config.enable_haptics : DEFAULT_CONFIG.ENABLE_HAPTICS,
+        enable_transitions: config.enable_transitions !== undefined ? config.enable_transitions : DEFAULT_CONFIG.ENABLE_TRANSITIONS,
         updated_at: new Date().toISOString()
       };
       await StorageAdapter.set(STORAGE_KEYS.CONFIG, JSON.stringify(configData));
@@ -150,7 +151,7 @@ const Storage = {
       const item = await this.getItemById(itemId);
       if (!item) return false;
 
-      const reviewDate = date || (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      const reviewDate = date || DateUtils.getLocalDateString(new Date());
 
       if (!item.reviews_completed) {
         item.reviews_completed = [];
@@ -187,7 +188,7 @@ const Storage = {
       const item = await this.getItemById(itemId);
       if (!item) return false;
 
-      const reviewDate = date || (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      const reviewDate = date || DateUtils.getLocalDateString(new Date());
       const reviewKey = `${stationNumber}-${reviewDate}`;
 
       if (!item.reviews_completed) {
@@ -217,7 +218,7 @@ const Storage = {
       const item = await this.getItemById(itemId);
       if (!item) return false;
 
-      const reviewDate = date || (DateUtils ? DateUtils.getLocalDateString(new Date()) : new Date().toISOString().split('T')[0]);
+      const reviewDate = date || DateUtils.getLocalDateString(new Date());
 
       if (!item.reviews_completed) {
         item.reviews_completed = [];
@@ -249,7 +250,7 @@ const Storage = {
     const item = await this.getItemById(itemId);
     if (!item || !item.reviews_completed) return false;
 
-    const reviewDate = date || new Date().toISOString().split('T')[0];
+    const reviewDate = date || DateUtils.getLocalDateString(new Date());
     const reviewKey = `${stationNumber}-${reviewDate}`;
     return item.reviews_completed.includes(reviewKey);
   },
